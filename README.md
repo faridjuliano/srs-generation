@@ -1,6 +1,9 @@
-# Next.js + Tailwind AI Chatbot
+# Next.js + Tailwind Chat + Local Dataset
 
-This is a Next.js app bootstrapped with `create-next-app` (App Router + Tailwind) that includes a simple AI chatbot page and backend API leveraging the OpenAI API.
+This is a Next.js app (App Router + Tailwind) that includes:
+- A clean chat UI (`/chat`) with rules/verification
+- A local dataset manager (`/dataset`) for Retrieval-Augmented responses
+- No external AI providers required
 
 ## Setup
 
@@ -10,13 +13,7 @@ This is a Next.js app bootstrapped with `create-next-app` (App Router + Tailwind
 npm install
 ```
 
-2. Create `.env.local` in the project root and add your OpenAI key:
-
-```bash
-OPENAI_API_KEY=your_api_key_here
-```
-
-3. Run the development server:
+2. Run the development server:
 
 ```bash
 npm run dev
@@ -26,35 +23,32 @@ Open http://localhost:3000 in your browser.
 
 ## Chatbot
 
-- Chat UI located at `/chat`.
-- Backend API route: `/api/chat`.
-- Shared types in `src/lib/types.ts`.
-- Rules and verification functions in `src/lib/rules.ts` to customize later.
+- Chat UI: `/chat`
+- Backend API route: `/api/chat` (local-only, optional dataset grounding)
+- Shared types: `src/lib/types.ts`
+- Rules & verification: `src/lib/rules.ts`
 
-## API
+## Dataset (Local RAG)
 
-POST `/api/chat`
+- Manage content at `/dataset` (ingest/search/clear)
+- API routes under `/api/dataset/*`
+- Store persisted at `.data/vector-store.json`
 
-Body:
+Example ingest:
 
-```json
-{
-  "messages": [
-    { "role": "user", "content": "Hello" }
-  ]
-}
+```bash
+curl -sS -X POST http://localhost:3000/api/dataset/ingest \
+  -H 'Content-Type: application/json' \
+  -d '{"text":"The system must support SSO via SAML2.", "source":"Security Spec"}'
 ```
 
-Response:
+Example search:
 
-```json
-{
-  "ok": true,
-  "message": { "role": "assistant", "content": "..." }
-}
+```bash
+curl -sS -X POST http://localhost:3000/api/dataset/search \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"How do we login?"}'
 ```
-
-Headers include `X-Chat-Violations` and `X-Chat-Warnings` from rules/verification.
 
 ## Smoke Test
 
@@ -66,25 +60,19 @@ curl -sS -X POST http://localhost:3000/api/chat \
   -d '{"messages":[{"role":"user","content":"Say hello"}]}' | jq
 ```
 
-If successful, you should see an assistant message in the JSON.
+You should see an assistant message in the JSON.
 
 ## Notes
 
-- Uses the official `openai` SDK.
-- The API route is configured for `runtime = 'edge'`.
-- Tailwind is preconfigured by the template; styles are in `src/app/globals.css`.
+- Local similarity uses tokenization + TF cosine (see `src/lib/rag/embeddings.ts`)
+- Chat response is rule-checked and either echoes the prompt or indicates found context
+- Tailwind styles are in `src/app/globals.css`
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Tailwind CSS](https://tailwindcss.com/)
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Follow official [Next.js deployment docs](https://nextjs.org/docs/app/building-your-application/deploying).

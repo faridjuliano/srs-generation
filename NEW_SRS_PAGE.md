@@ -41,17 +41,23 @@ Navigate to: `http://localhost:3000/new-srs` (or whatever port your dev server i
 
 You can also access it from the home page at `http://localhost:3000` which now has navigation links to:
 - **New SRS Project** → `/new-srs` (the new form-based interface)
-- **AI Chat** → `/chat` (the existing chat interface)
+- **AI Chat** → `/chat` (the chat interface with optional dataset usage)
 
-## Files Created/Modified
-- ✅ Created: `/src/app/new-srs/page.tsx` - Main page component
-- ✅ Modified: `/src/app/layout.tsx` - Added Material Symbols font
-- ✅ Modified: `/src/app/globals.css` - Added icon styling
+## Dataset Integration (Local)
+This project includes a simple local Retrieval-Augmented pipeline using tokenization + TF cosine and a JSON vector store persisted in `.data/vector-store.json`.
 
-## Technical Notes
-- Uses React hooks for state management (useState)
-- Character counter for textarea
-- File upload management with delete functionality
-- All form controls are fully controlled components
-- Accessibility-friendly with proper labels and ARIA attributes
+### Endpoints
+- `POST /api/dataset/ingest` — Add text to the dataset
+  - body: `{ text: string, source?: string }`
+  - returns: `{ ok: true, chunks: number }`
+- `POST /api/dataset/search` — Search similar chunks
+  - body: `{ query: string, topK?: number }`
+  - returns: `{ ok: true, results: Array<{ id, text, source? }> }`
+- `POST /api/dataset/clear` — Clear the dataset
 
+### Chat with Dataset
+- Toggle "Use Dataset" in the chat header to enable grounding.
+- When enabled, the backend retrieves top-k relevant chunks and injects them as system context.
+
+### Dev Page
+- A basic dataset manager is available at `/dataset` to ingest, search, and clear content interactively.

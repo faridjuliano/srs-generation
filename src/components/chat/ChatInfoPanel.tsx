@@ -1,10 +1,9 @@
 interface ChatInfoPanelProps {
   messageCount: number;
-  provider: 'openai' | 'gemini';
   isLoading: boolean;
 }
 
-export function ChatInfoPanel({ messageCount, provider, isLoading }: ChatInfoPanelProps) {
+export function ChatInfoPanel({ messageCount, isLoading }: ChatInfoPanelProps) {
   return (
     <aside className="w-80 h-full bg-white dark:bg-[#161926] border-l border-[#e7e9f3] dark:border-[#2a2e3b] flex flex-col flex-shrink-0 z-20 transition-all duration-300 shadow-xl">
       <div className="h-16 flex items-center justify-between px-5 border-b border-[#e7e9f3] dark:border-[#2a2e3b] bg-slate-50/50 dark:bg-[#1a1d2d]">
@@ -38,12 +37,6 @@ export function ChatInfoPanel({ messageCount, provider, isLoading }: ChatInfoPan
           </h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-600 dark:text-slate-300">Provider</span>
-              <span className="bg-white dark:bg-[#1a1d2d] border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded text-xs font-bold text-slate-700 dark:text-white capitalize">
-                {provider}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
               <span className="text-sm text-slate-600 dark:text-slate-300">Status</span>
               <span className="bg-white dark:bg-[#1a1d2d] border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded text-xs font-bold text-slate-700 dark:text-white">
                 {isLoading ? 'Processing' : 'Ready'}
@@ -75,4 +68,3 @@ export function ChatInfoPanel({ messageCount, provider, isLoading }: ChatInfoPan
     </aside>
   );
 }
-

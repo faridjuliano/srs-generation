@@ -1,16 +1,14 @@
 import { useState } from 'react';
 import type { Message } from '@/lib/types';
 
-type Provider = 'openai' | 'gemini';
-
 interface UseChatReturn {
   messages: Message[];
   input: string;
   loading: boolean;
   error: string | null;
-  provider: Provider;
+  useRag: boolean;
   setInput: (input: string) => void;
-  setProvider: (provider: Provider) => void;
+  setUseRag: (v: boolean) => void;
   sendMessage: () => Promise<void>;
   clearError: () => void;
   resetChat: () => void;
@@ -21,7 +19,7 @@ export function useChat(): UseChatReturn {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [provider, setProvider] = useState<Provider>('openai');
+  const [useRag, setUseRag] = useState<boolean>(true);
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
@@ -33,11 +31,10 @@ export function useChat(): UseChatReturn {
     setLoading(true);
 
     try {
-      const url = provider === 'openai' ? '/api/chat' : '/api/chat/gemini';
-      const res = await fetch(url, {
+      const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages }),
+        body: JSON.stringify({ messages: newMessages, useRag }),
       });
       const data = await res.json();
 
@@ -69,12 +66,11 @@ export function useChat(): UseChatReturn {
     input,
     loading,
     error,
-    provider,
+    useRag,
     setInput,
-    setProvider,
+    setUseRag,
     sendMessage,
     clearError,
     resetChat,
   };
 }
-

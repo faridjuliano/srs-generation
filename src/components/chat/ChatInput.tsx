@@ -4,7 +4,6 @@ interface ChatInputProps {
   onSendMessage: () => void;
   isLoading: boolean;
   onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  provider: 'openai' | 'gemini';
 }
 
 export function ChatInput({
@@ -13,7 +12,6 @@ export function ChatInput({
   onSendMessage,
   isLoading,
   onKeyDown,
-  provider,
 }: ChatInputProps) {
   return (
     <div className="px-8 py-6 bg-white dark:bg-[#161926] border-t border-[#e7e9f3] dark:border-[#2a2e3b] flex-shrink-0">
@@ -35,11 +33,10 @@ export function ChatInput({
           </button>
         </div>
         <div className="flex items-center justify-between text-xs text-slate-500">
-          <span>Using {provider === 'openai' ? 'OpenAI' : 'Gemini'} with rules & verification</span>
+          <span>Rules & verification enabled</span>
           <span>Press Enter to send</span>
         </div>
       </div>
     </div>
   );
 }
-
