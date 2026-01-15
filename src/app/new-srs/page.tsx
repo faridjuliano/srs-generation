@@ -1,19 +1,83 @@
 "use client";
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function NewSRSPage() {
+  const router = useRouter();
   const [projectName, setProjectName] = useState('');
   const [projectVision, setProjectVision] = useState('');
   const [srsStandard, setSrsStandard] = useState('IEEE 830-1998 (Recommended)');
   const [toneDetail, setToneDetail] = useState('Technical & Formal');
   const [outputLanguage, setOutputLanguage] = useState('English (US)');
   const [autoDetectActors, setAutoDetectActors] = useState(true);
-  const [riskAnalysis, setRiskAnalysis] = useState(true);
-  const [uploadedFiles, setUploadedFiles] = useState<string[]>(['Client_Meeting_Notes_Oct.pdf']);
+  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isAnalysisPanelOpen, setIsAnalysisPanelOpen] = useState(false);
 
-  const handleGenerate = () => {
-    console.log('Generating SRS document...');
+  const handleGenerate = async () => {
+    try {
+      setIsGenerating(true);
+      setError(null);
+
+      const formData = {
+        projectName,
+        projectVision,
+        srsStandard,
+        toneDetail,
+        outputLanguage,
+        autoDetectActors,
+        uploadedFiles,
+      };
+
+      console.log('Generating SRS document with Gemini API...', formData);
+
+      // Call the SRS generation API
+      const response = await fetch('/api/srs/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate SRS document');
+      }
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error('SRS generation failed');
+      }
+
+      // Navigate to results page with generated content
+      const generatedData = {
+        ...formData,
+        generatedContent: result.content,
+      };
+
+      // Store generated data in localStorage
+      localStorage.setItem('srs-generated', JSON.stringify(generatedData));
+
+      // Also update the draft with the generated content
+      localStorage.setItem('srs-draft', JSON.stringify({
+        ...formData,
+        savedAt: new Date().toISOString(),
+      }));
+
+      // Navigate to results page
+      router.push('/srs-results');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred while generating the SRS document';
+      setError(errorMessage);
+      console.error('Error generating SRS:', err);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleSaveDraft = () => {
@@ -28,8 +92,26 @@ export default function NewSRSPage() {
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white dark:bg-[#161926] rounded-lg shadow-lg border border-slate-200 dark:border-slate-700"
+      >
+        <span className="material-symbols-outlined text-slate-600 dark:text-slate-300">
+          {isSidebarOpen ? 'close' : 'menu'}
+        </span>
+      </button>
+
+      {/* Overlay for mobile */}
+      {isSidebarOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/50 z-30"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="flex flex-col w-64 h-full bg-[#f8f9fc] dark:bg-[#161926] border-r border-[#e7e9f3] dark:border-[#2a2e3b] flex-shrink-0">
+      <aside className={`flex flex-col w-64 h-full bg-[#f8f9fc] dark:bg-[#161926] border-r border-[#e7e9f3] dark:border-[#2a2e3b] flex-shrink-0 fixed lg:static inset-y-0 left-0 z-40 transform transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="p-6">
           <div className="flex items-center gap-3">
             <div className="size-8 rounded bg-primary flex items-center justify-center text-white">
@@ -83,31 +165,37 @@ export default function NewSRSPage() {
 
       {/* Main Content */}
       <main className="flex flex-col flex-1 h-full min-w-0 bg-background-light dark:bg-background-dark overflow-hidden relative">
-        <header className="h-16 flex items-center justify-between px-8 bg-white dark:bg-[#161926] border-b border-[#e7e9f3] dark:border-[#2a2e3b] flex-shrink-0 z-10">
-          <nav className="flex text-sm text-slate-500 dark:text-slate-400">
-            <a className="hover:text-primary" href="#">Projects</a>
-            <span className="mx-2">/</span>
+        <header className="h-16 flex items-center justify-between px-4 lg:px-8 bg-white dark:bg-[#161926] border-b border-[#e7e9f3] dark:border-[#2a2e3b] flex-shrink-0 z-10">
+          <nav className="flex text-xs lg:text-sm text-slate-500 dark:text-slate-400 ml-12 lg:ml-0">
+            <a className="hover:text-primary hidden sm:inline" href="#">Projects</a>
+            <span className="mx-2 hidden sm:inline">/</span>
             <span className="text-slate-900 dark:text-white font-medium">New SRS Generation</span>
           </nav>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 lg:gap-6">
+            <button
+              onClick={() => setIsAnalysisPanelOpen(!isAnalysisPanelOpen)}
+              className="lg:hidden p-2 text-slate-500 hover:text-primary transition-colors"
+            >
+              <span className="material-symbols-outlined">analytics</span>
+            </button>
             <button className="relative p-2 text-slate-500 hover:text-primary transition-colors">
               <span className="material-symbols-outlined">notifications</span>
             </button>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-8 scroll-smooth">
-          <div className="max-w-5xl mx-auto flex flex-col gap-6">
+        <div className="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth">
+          <div className="max-w-5xl mx-auto flex flex-col gap-4 lg:gap-6">
             <div className="flex flex-col gap-2 mb-2">
-              <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Start New Analysis</h1>
-              <p className="text-slate-500 dark:text-slate-400 max-w-2xl">
+              <h1 className="text-2xl lg:text-3xl font-black tracking-tight text-slate-900 dark:text-white">Start New Analysis</h1>
+              <p className="text-sm lg:text-base text-slate-500 dark:text-slate-400 max-w-2xl">
                 Provide your project vision, unstructured notes, or legacy documents. Our NLP engine will extract requirements, identify actors, and propose a structured SRS document.
               </p>
             </div>
 
-            <div className="bg-white dark:bg-[#1a1d2d] rounded-xl border border-[#e7e9f3] dark:border-[#2a2e3b] shadow-sm p-8">
-              <div className="grid grid-cols-12 gap-8">
-                <div className="col-span-12 lg:col-span-8 flex flex-col gap-6">
+            <div className="bg-white dark:bg-[#1a1d2d] rounded-xl border border-[#e7e9f3] dark:border-[#2a2e3b] shadow-sm p-4 lg:p-8">
+              <div className="grid grid-cols-12 gap-4 lg:gap-8">
+                <div className="col-span-12 lg:col-span-8 flex flex-col gap-4 lg:gap-6">
                   <div>
                     <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">Project Name</label>
                     <input
@@ -120,15 +208,15 @@ export default function NewSRSPage() {
                   </div>
 
                   <div className="relative">
-                    <div className="flex justify-between items-center mb-2">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
                       <label className="block text-sm font-bold text-slate-900 dark:text-white">Project Vision & Core Requirements</label>
-                      <button className="text-xs text-primary font-medium hover:underline flex items-center gap-1">
+                      <button className="text-xs text-primary font-medium hover:underline flex items-center gap-1 self-start sm:self-auto">
                         <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>auto_awesome</span> Use AI Templates
                       </button>
                     </div>
                     <div className="relative group">
                       <textarea
-                        className="w-full h-64 rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#202434] text-sm p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary dark:text-white leading-relaxed resize-y"
+                        className="w-full h-48 lg:h-64 rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#202434] text-sm p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary dark:text-white leading-relaxed resize-y"
                         placeholder="Describe your software in natural language. For example:
 'We need a web-based inventory system for a mid-sized retail chain.
 Users should include Administrators, Store Managers, and Warehouse Staff.
@@ -147,27 +235,27 @@ Security is critical, requiring 2FA for all admin actions.'"
 
                   <div>
                     <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">Supporting Documents</label>
-                    <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:bg-slate-50 dark:hover:bg-[#202434] transition-all cursor-pointer group">
-                      <div className="size-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-4 lg:p-6 flex flex-col items-center justify-center text-center hover:bg-slate-50 dark:hover:bg-[#202434] transition-all cursor-pointer group">
+                      <div className="size-10 lg:size-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                         <span className="material-symbols-outlined text-slate-400 group-hover:text-primary">cloud_upload</span>
                       </div>
-                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      <p className="text-xs lg:text-sm font-medium text-slate-700 dark:text-slate-300">
                         <span className="text-primary hover:underline">Click to upload</span> or drag and drop
                       </p>
-                      <p className="text-xs text-slate-500 mt-1">Meeting transcripts, existing spec sheets, or emails (PDF, DOCX, TXT)</p>
+                      <p className="text-xs text-slate-500 mt-1 px-2">Meeting transcripts, existing spec sheets, or emails (PDF, DOCX, TXT)</p>
                     </div>
                     {uploadedFiles.map((file, index) => (
                       <div key={index} className="mt-3 flex items-center justify-between p-3 bg-slate-50 dark:bg-[#202434] rounded-lg border border-slate-200 dark:border-slate-700">
-                        <div className="flex items-center gap-3">
-                          <div className="size-8 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded flex items-center justify-center">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="size-8 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded flex items-center justify-center flex-shrink-0">
                             <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>picture_as_pdf</span>
                           </div>
-                          <div>
-                            <p className="text-sm font-medium text-slate-900 dark:text-white">{file}</p>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{file}</p>
                             <p className="text-xs text-slate-500">2.4 MB • Uploaded just now</p>
                           </div>
                         </div>
-                        <button onClick={() => handleRemoveFile(index)} className="text-slate-400 hover:text-red-500 transition-colors">
+                        <button onClick={() => handleRemoveFile(index)} className="text-slate-400 hover:text-red-500 transition-colors flex-shrink-0 ml-2">
                           <span className="material-symbols-outlined">delete</span>
                         </button>
                       </div>
@@ -175,12 +263,12 @@ Security is critical, requiring 2FA for all admin actions.'"
                   </div>
                 </div>
 
-                <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
-                  <div className="bg-slate-50 dark:bg-[#202434] rounded-xl p-5 border border-slate-100 dark:border-slate-800 h-full">
+                <div className="col-span-12 lg:col-span-4 flex flex-col gap-4 lg:gap-6">
+                  <div className="bg-slate-50 dark:bg-[#202434] rounded-xl p-4 lg:p-5 border border-slate-100 dark:border-slate-800 h-full">
                     <h3 className="font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                       <span className="material-symbols-outlined text-slate-400">tune</span> Configuration
                     </h3>
-                    <div className="space-y-5">
+                    <div className="space-y-4 lg:space-y-5">
                       <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">SRS Standard</label>
                         <select
@@ -229,36 +317,50 @@ Security is critical, requiring 2FA for all admin actions.'"
                             onChange={(e) => setAutoDetectActors(e.target.checked)}
                           />
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Risk Analysis</span>
-                          <input
-                            type="checkbox"
-                            className="rounded border-slate-300 text-primary focus:ring-primary h-4 w-4"
-                            checked={riskAnalysis}
-                            onChange={(e) => setRiskAnalysis(e.target.checked)}
-                          />
-                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              {error && (
+                <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                  <div className="flex gap-3">
+                    <span className="material-symbols-outlined text-red-600 dark:text-red-400 flex-shrink-0">error</span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-red-800 dark:text-red-200">Error generating SRS</p>
+                      <p className="text-sm text-red-700 dark:text-red-300 mt-1 break-words">{error}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-6 lg:mt-8 pt-4 lg:pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
                 <button
                   onClick={handleSaveDraft}
-                  className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 font-medium text-sm px-4 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                  disabled={isGenerating}
+                  className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 font-medium text-sm px-4 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed order-2 sm:order-1"
                 >
                   Save as Draft
                 </button>
-                <div className="flex items-center gap-4">
-                  <span className="text-xs text-slate-400">Estimated processing time: ~45s</span>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 lg:gap-4 order-1 sm:order-2">
+                  <span className="text-xs text-slate-400 text-center sm:text-left">{isGenerating ? 'Generating...' : 'Estimated processing time: ~45s'}</span>
                   <button
                     onClick={handleGenerate}
-                    className="bg-primary hover:bg-blue-700 text-white font-bold text-sm px-6 py-3 rounded-lg shadow-lg shadow-blue-500/30 flex items-center gap-2 transition-all transform hover:-translate-y-0.5"
+                    disabled={isGenerating}
+                    className="bg-primary hover:bg-blue-700 text-white font-bold text-sm px-6 py-3 rounded-lg shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary w-full sm:w-auto"
                   >
-                    <span className="material-symbols-outlined icon-fill">auto_awesome</span>
-                    Generate SRS Document
+                    {isGenerating ? (
+                      <>
+                        <span className="material-symbols-outlined animate-spin">refresh</span>
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <span className="material-symbols-outlined icon-fill">auto_awesome</span>
+                        Generate SRS Document
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -268,7 +370,15 @@ Security is critical, requiring 2FA for all admin actions.'"
       </main>
 
       {/* Right Sidebar - Analysis Panel */}
-      <aside className="w-80 h-full bg-white dark:bg-[#161926] border-l border-[#e7e9f3] dark:border-[#2a2e3b] flex flex-col flex-shrink-0 z-20 transition-all duration-300 shadow-xl">
+      <aside className={`w-80 h-full bg-white dark:bg-[#161926] border-l border-[#e7e9f3] dark:border-[#2a2e3b] flex flex-col flex-shrink-0 z-20 transition-all duration-300 shadow-xl fixed lg:static inset-y-0 right-0 transform ${isAnalysisPanelOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}>
+        {/* Close button for mobile */}
+        <button
+          onClick={() => setIsAnalysisPanelOpen(false)}
+          className="lg:hidden absolute top-4 right-4 p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+        >
+          <span className="material-symbols-outlined">close</span>
+        </button>
+
         <div className="h-16 flex items-center justify-between px-5 border-b border-[#e7e9f3] dark:border-[#2a2e3b] bg-slate-50/50 dark:bg-[#1a1d2d]">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-primary">analytics</span>
@@ -341,6 +451,14 @@ Security is critical, requiring 2FA for all admin actions.'"
           </div>
         </div>
       </aside>
+
+      {/* Overlay for analysis panel on mobile */}
+      {isAnalysisPanelOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/50 z-10"
+          onClick={() => setIsAnalysisPanelOpen(false)}
+        />
+      )}
     </div>
   );
 }
