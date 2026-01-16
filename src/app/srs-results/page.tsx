@@ -17,7 +17,7 @@ import NonFunctionalRequirementsSection from '@/components/srs/sections/NonFunct
 import NonFunctionalRequirementsSectionNew from '@/components/srs/sections/NonFunctionalRequirementsSectionNew';
 import AppendicesSection from '@/components/srs/sections/AppendicesSection';
 import { exportSRSToDocx } from '@/lib/docxExport';
-fimport { generateSRSFromTemplate } from '@/lib/srsTemplateGenerator';
+import { generateSRSFromTemplate } from '@/lib/srsTemplateGenerator';
 
 interface FormData {
   projectName: string;
