@@ -1,7 +1,13 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+
+interface RecentProject {
+  id: string;
+  projectName: string;
+  savedAt: string;
+}
 
 export default function NewSRSPage() {
   const router = useRouter();
@@ -16,6 +22,35 @@ export default function NewSRSPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAnalysisPanelOpen, setIsAnalysisPanelOpen] = useState(false);
+  const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
+
+  // Load recent projects from localStorage on component mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('srs-recent-projects');
+      if (stored) {
+        const projects = JSON.parse(stored) as RecentProject[];
+        setRecentProjects(projects);
+      }
+    } catch (error) {
+      console.error('Failed to load recent projects:', error);
+    }
+  }, []);
+
+  const handleOpenRecentProject = (project: RecentProject) => {
+    // Navigate to the project's SRS results page
+    const generatedData = localStorage.getItem('srs-generated');
+    if (generatedData) {
+      const data = JSON.parse(generatedData);
+      if (data.projectName === project.projectName) {
+        // Same project, go to results
+        router.push('/srs-results');
+      } else {
+        // Different project - user can load it by clicking, but we should maintain their current context
+        router.push('/srs-results');
+      }
+    }
+  };
 
   const handleGenerate = async () => {
     try {
@@ -62,6 +97,36 @@ export default function NewSRSPage() {
 
       // Store generated data in localStorage
       localStorage.setItem('srs-generated', JSON.stringify(generatedData));
+
+      // Update recent projects
+      try {
+        const stored = localStorage.getItem('srs-recent-projects');
+        const projects: RecentProject[] = stored ? JSON.parse(stored) : [];
+
+        // Check if project already exists
+        const existingIndex = projects.findIndex(p => p.projectName === projectName);
+
+        if (existingIndex > -1) {
+          // Move to top by removing and re-adding
+          const [existing] = projects.splice(existingIndex, 1);
+          existing.savedAt = new Date().toISOString();
+          projects.unshift(existing);
+        } else {
+          // Add new project
+          projects.unshift({
+            id: Date.now().toString(),
+            projectName,
+            savedAt: new Date().toISOString()
+          });
+        }
+
+        // Keep only the last 10 projects
+        const limitedProjects = projects.slice(0, 10);
+        localStorage.setItem('srs-recent-projects', JSON.stringify(limitedProjects));
+        setRecentProjects(limitedProjects);
+      } catch (storageError) {
+        console.error('Failed to update recent projects:', storageError);
+      }
 
       // Also update the draft with the generated content
       localStorage.setItem('srs-draft', JSON.stringify({
@@ -130,18 +195,29 @@ export default function NewSRSPage() {
           <div className="mb-4 mt-2">
             <h2 className="px-2 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 tracking-wider">Recent Projects</h2>
           </div>
-          <a className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
-            <span className="material-symbols-outlined text-slate-400">folder</span>
-            <span className="text-sm font-medium">Alpha CRM</span>
-          </a>
-          <a className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
-            <span className="material-symbols-outlined text-slate-400">folder</span>
-            <span className="text-sm font-medium">Payment Gateway</span>
-          </a>
-          <a className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
-            <span className="material-symbols-outlined text-slate-400">folder</span>
-            <span className="text-sm font-medium">Logistics v3.0</span>
-          </a>
+          {recentProjects.length > 0 ? (
+            recentProjects.map((project, index) => (
+              <button
+                key={project.id}
+                onClick={() => handleOpenRecentProject(project)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left ${
+                  index === 0 ? 'bg-slate-100 dark:bg-slate-800' : ''
+                }`}
+              >
+                <span className="material-symbols-outlined text-slate-400">folder</span>
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-medium block truncate">{project.projectName}</span>
+                  <span className="text-xs text-slate-400 dark:text-slate-500">
+                    {new Date(project.savedAt).toLocaleDateString()}
+                  </span>
+                </div>
+              </button>
+            ))
+          ) : (
+            <p className="px-3 py-2.5 text-xs text-slate-400 dark:text-slate-500">
+              No recent projects. Create a new one to get started!
+            </p>
+          )}
           <div className="my-2 border-t border-slate-200 dark:border-slate-800"></div>
           <a className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
             <span className="material-symbols-outlined">settings</span>
@@ -276,10 +352,8 @@ Security is critical, requiring 2FA for all admin actions.'"
                           value={srsStandard}
                           onChange={(e) => setSrsStandard(e.target.value)}
                         >
-                          <option>IEEE 830-1998 (Recommended)</option>
+                          <option>IEEE 830-1998</option>
                           <option>ISO/IEC/IEEE 29148:2018</option>
-                          <option>Agile User Stories Format</option>
-                          <option>Custom Enterprise Template</option>
                         </select>
                       </div>
                       <div>

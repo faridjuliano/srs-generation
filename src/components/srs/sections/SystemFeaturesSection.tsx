@@ -13,13 +13,16 @@ interface SystemFeaturesSectionProps {
 }
 
 export const SystemFeaturesSection: React.FC<SystemFeaturesSectionProps> = ({
-  features,
+  features = [],
   isEditing,
   onUpdateFeature
 }) => {
+  // Ensure features is always an array
+  const safeFeatures = Array.isArray(features) ? features : [];
+
   return (
     <Section number="4" title="System Features">
-      {features.map((feature, index) => (
+      {safeFeatures.map((feature, index) => (
         <SystemFeature
           key={feature.id}
           id={feature.id}

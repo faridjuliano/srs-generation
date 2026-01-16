@@ -10,15 +10,18 @@ interface EditableListProps {
 }
 
 export const EditableList: React.FC<EditableListProps> = ({
-  items,
+  items = [],
   onChange,
   isEditing,
   onAddItem,
   onRemoveItem,
   buttonLabel = 'Add Item'
 }) => {
+  // Ensure items is always an array
+  const safeItems = Array.isArray(items) ? items : [];
+
   const handleItemChange = (index: number, value: string) => {
-    const updated = [...items];
+    const updated = [...safeItems];
     updated[index] = value;
     onChange(updated);
   };
@@ -27,7 +30,7 @@ export const EditableList: React.FC<EditableListProps> = ({
     if (onRemoveItem) {
       onRemoveItem(index);
     } else {
-      const updated = items.filter((_, i) => i !== index);
+      const updated = safeItems.filter((_, i) => i !== index);
       onChange(updated);
     }
   };
@@ -36,13 +39,13 @@ export const EditableList: React.FC<EditableListProps> = ({
     if (onAddItem) {
       onAddItem();
     } else {
-      onChange([...items, '']);
+      onChange([...safeItems, '']);
     }
   };
 
   return isEditing ? (
     <div className="space-y-2">
-      {items.map((item, index) => (
+      {safeItems.map((item, index) => (
         <div key={index} className="flex gap-3 items-start">
           <input
             type="text"
@@ -68,7 +71,7 @@ export const EditableList: React.FC<EditableListProps> = ({
     </div>
   ) : (
     <ul className="space-y-2">
-      {items.map((item, index) => (
+      {safeItems.map((item, index) => (
         <li key={index} className="flex gap-3 text-sm lg:text-base text-slate-600 dark:text-slate-400">
           <span className="text-primary font-bold mt-0.5">•</span>
           <span>{item}</span>

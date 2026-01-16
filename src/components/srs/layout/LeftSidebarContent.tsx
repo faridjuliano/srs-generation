@@ -1,4 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+
+interface RecentProject {
+  id: string;
+  projectName: string;
+  savedAt: string;
+}
 
 interface LeftSidebarContentProps {
   projectName: string;
@@ -9,6 +15,67 @@ export const LeftSidebarContent: React.FC<LeftSidebarContentProps> = ({
   projectName,
   router
 }) => {
+  const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
+
+  // Load recent projects from localStorage on component mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('srs-recent-projects');
+      if (stored) {
+        const projects = JSON.parse(stored) as RecentProject[];
+        setRecentProjects(projects);
+      }
+    } catch (error) {
+      console.error('Failed to load recent projects:', error);
+    }
+  }, []);
+
+  // Add current project to recent projects when projectName changes
+  useEffect(() => {
+    if (projectName) {
+      try {
+        const stored = localStorage.getItem('srs-recent-projects');
+        const projects: RecentProject[] = stored ? JSON.parse(stored) : [];
+
+        // Check if project already exists
+        const existingIndex = projects.findIndex(p => p.projectName === projectName);
+
+        if (existingIndex > -1) {
+          // Move to top by removing and re-adding
+          const [existing] = projects.splice(existingIndex, 1);
+          existing.savedAt = new Date().toISOString();
+          projects.unshift(existing);
+        } else {
+          // Add new project
+          projects.unshift({
+            id: Date.now().toString(),
+            projectName,
+            savedAt: new Date().toISOString()
+          });
+        }
+
+        // Keep only the last 10 projects
+        const limitedProjects = projects.slice(0, 10);
+        localStorage.setItem('srs-recent-projects', JSON.stringify(limitedProjects));
+        setRecentProjects(limitedProjects);
+      } catch (error) {
+        console.error('Failed to update recent projects:', error);
+      }
+    }
+  }, [projectName]);
+
+  const handleProjectClick = (project: RecentProject) => {
+    // Store the selected project in localStorage for the results page
+    const generatedData = localStorage.getItem('srs-generated');
+    if (generatedData) {
+      const data = JSON.parse(generatedData);
+      if (data.projectName !== project.projectName) {
+        // Project changed, navigate to new project
+        router.push('/new-srs');
+      }
+    }
+  };
+
   return (
     <>
       <div className="p-6">
@@ -36,27 +103,29 @@ export const LeftSidebarContent: React.FC<LeftSidebarContentProps> = ({
             Recent Projects
           </h2>
         </div>
-        <a
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors bg-slate-100 dark:bg-slate-800"
-          href="#"
-        >
-          <span className="material-symbols-outlined text-slate-400">folder</span>
-          <span className="text-sm font-medium">{projectName || 'Current Project'}</span>
-        </a>
-        <a
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          href="#"
-        >
-          <span className="material-symbols-outlined text-slate-400">folder</span>
-          <span className="text-sm font-medium">Payment Gateway</span>
-        </a>
-        <a
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          href="#"
-        >
-          <span className="material-symbols-outlined text-slate-400">folder</span>
-          <span className="text-sm font-medium">Logistics v3.0</span>
-        </a>
+        {recentProjects.length > 0 ? (
+          recentProjects.map((project, index) => (
+            <button
+              key={project.id}
+              onClick={() => handleProjectClick(project)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left ${
+                index === 0 ? 'bg-slate-100 dark:bg-slate-800' : ''
+              }`}
+            >
+              <span className="material-symbols-outlined text-slate-400">folder</span>
+              <div className="flex-1 min-w-0">
+                <span className="text-sm font-medium block truncate">{project.projectName}</span>
+                <span className="text-xs text-slate-400 dark:text-slate-500">
+                  {new Date(project.savedAt).toLocaleDateString()}
+                </span>
+              </div>
+            </button>
+          ))
+        ) : (
+          <p className="px-3 py-2.5 text-xs text-slate-400 dark:text-slate-500">
+            No recent projects. Create a new one to get started!
+          </p>
+        )}
         <div className="my-2 border-t border-slate-200 dark:border-slate-800"></div>
         <a
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
