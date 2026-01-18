@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { generateSRSFromTemplate } from '@/lib/srsTemplateGenerator';
 
 interface RecentProject {
   id: string;
@@ -67,35 +68,54 @@ export default function NewSRSPage() {
         uploadedFiles,
       };
 
-      console.log('Generating SRS document with Gemini API...', formData);
+      console.log('Generating SRS document...', formData);
 
-      // Call the SRS generation API
-      const response = await fetch('/api/srs/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      let generatedContent = null;
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate SRS document');
+      // Try API first
+      try {
+        const response = await fetch('/api/srs/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.content) {
+            generatedContent = result.content;
+            console.log('SRS generated from API');
+          }
+        } else {
+          const errorData = await response.json();
+          console.warn('API error:', errorData.error);
+        }
+      } catch (apiError) {
+        console.warn('API call failed, using template generator:', apiError);
       }
 
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error('SRS generation failed');
+      // If API failed, use template generator
+      if (!generatedContent) {
+        console.log('Using template generator as fallback');
+        generatedContent = generateSRSFromTemplate({
+          projectName: projectName || 'Unnamed Project',
+          projectVision: projectVision || 'No vision provided',
+          srsStandard: srsStandard || 'IEEE 830-1998',
+          toneDetail: toneDetail || 'Technical & Formal',
+          outputLanguage: outputLanguage || 'English (US)',
+          autoDetectActors: autoDetectActors !== false,
+          uploadedFiles: uploadedFiles || []
+        });
       }
 
-      // Navigate to results page with generated content
+      // Store generated data
       const generatedData = {
         ...formData,
-        generatedContent: result.content,
+        generatedContent: generatedContent,
       };
 
-      // Store generated data in localStorage
       localStorage.setItem('srs-generated', JSON.stringify(generatedData));
 
       // Update recent projects
@@ -103,16 +123,13 @@ export default function NewSRSPage() {
         const stored = localStorage.getItem('srs-recent-projects');
         const projects: RecentProject[] = stored ? JSON.parse(stored) : [];
 
-        // Check if project already exists
         const existingIndex = projects.findIndex(p => p.projectName === projectName);
 
         if (existingIndex > -1) {
-          // Move to top by removing and re-adding
           const [existing] = projects.splice(existingIndex, 1);
           existing.savedAt = new Date().toISOString();
           projects.unshift(existing);
         } else {
-          // Add new project
           projects.unshift({
             id: Date.now().toString(),
             projectName,
@@ -120,7 +137,6 @@ export default function NewSRSPage() {
           });
         }
 
-        // Keep only the last 10 projects
         const limitedProjects = projects.slice(0, 10);
         localStorage.setItem('srs-recent-projects', JSON.stringify(limitedProjects));
         setRecentProjects(limitedProjects);
@@ -128,13 +144,13 @@ export default function NewSRSPage() {
         console.error('Failed to update recent projects:', storageError);
       }
 
-      // Also update the draft with the generated content
+      // Save draft
       localStorage.setItem('srs-draft', JSON.stringify({
         ...formData,
         savedAt: new Date().toISOString(),
       }));
 
-      // Navigate to results page
+      // Navigate to results
       router.push('/srs-results');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred while generating the SRS document';
