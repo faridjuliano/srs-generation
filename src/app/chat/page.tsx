@@ -28,8 +28,8 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background-light dark:bg-background-dark text-[#0d101b] dark:text-white transition-colors duration-200">
-      <Sidebar onNewChat={resetChat} />
+    <div className="flex flex-col md:flex-row h-screen w-full overflow-hidden bg-background-light dark:bg-background-dark text-[#0d101b] dark:text-white transition-colors duration-200">
+      <Sidebar onNewChat={resetChat} className="hidden md:block" />
 
       <main className="flex flex-col flex-1 h-full min-w-0 bg-background-light dark:bg-background-dark overflow-hidden relative">
         <ChatHeader useRag={useRag} onUseRagChange={setUseRag} />
@@ -47,7 +47,7 @@ export default function ChatPage() {
         />
       </main>
 
-      <ChatInfoPanel messageCount={messages.length} isLoading={loading} />
+      <ChatInfoPanel messageCount={messages.length} isLoading={loading} className="hidden lg:block" />
     </div>
   );
 }

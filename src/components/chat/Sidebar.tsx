@@ -1,10 +1,11 @@
 interface SidebarProps {
   onNewChat: () => void;
+  className?: string;
 }
 
-export function Sidebar({ onNewChat }: SidebarProps) {
+export function Sidebar({ onNewChat, className = '' }: SidebarProps) {
   return (
-    <aside className="flex flex-col w-64 h-full bg-[#f8f9fc] dark:bg-[#161926] border-r border-[#e7e9f3] dark:border-[#2a2e3b] flex-shrink-0">
+    <aside className={`flex flex-col w-64 h-full bg-[#f8f9fc] dark:bg-[#161926] border-r border-[#e7e9f3] dark:border-[#2a2e3b] flex-shrink-0 ${className}`}>
       <div className="p-6">
         <div className="flex items-center gap-3">
           <div className="size-8 rounded bg-primary flex items-center justify-center text-white font-bold">

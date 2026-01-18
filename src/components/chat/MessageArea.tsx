@@ -16,8 +16,8 @@ export function MessageArea({
   error,
 }: MessageAreaProps) {
   return (
-    <div className="flex-1 overflow-y-auto p-8 scroll-smooth">
-      <div className="max-w-4xl mx-auto flex flex-col gap-6">
+    <div className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
+      <div className="max-w-4xl mx-auto flex flex-col gap-4 md:gap-6">
         {messages.length === 0 ? (
           <EmptyState />
         ) : (

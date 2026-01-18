@@ -1,11 +1,12 @@
 interface ChatInfoPanelProps {
   messageCount: number;
   isLoading: boolean;
+  className?: string;
 }
 
-export function ChatInfoPanel({ messageCount, isLoading }: ChatInfoPanelProps) {
+export function ChatInfoPanel({ messageCount, isLoading, className = '' }: ChatInfoPanelProps) {
   return (
-    <aside className="w-80 h-full bg-white dark:bg-[#161926] border-l border-[#e7e9f3] dark:border-[#2a2e3b] flex flex-col flex-shrink-0 z-20 transition-all duration-300 shadow-xl">
+    <aside className={`w-80 h-full bg-white dark:bg-[#161926] border-l border-[#e7e9f3] dark:border-[#2a2e3b] flex flex-col flex-shrink-0 z-20 transition-all duration-300 shadow-xl ${className}`}>
       <div className="h-16 flex items-center justify-between px-5 border-b border-[#e7e9f3] dark:border-[#2a2e3b] bg-slate-50/50 dark:bg-[#1a1d2d]">
         <div className="flex items-center gap-2">
           <span>📊</span>
