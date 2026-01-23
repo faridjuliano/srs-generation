@@ -12,9 +12,11 @@ import OverallDescriptionSection from '@/components/srs/sections/OverallDescript
 import OverallDescriptionSectionNew from '@/components/srs/sections/OverallDescriptionSectionNew';
 import ExternalInterfaceRequirementsSection from '@/components/srs/sections/ExternalInterfaceRequirementsSection';
 import SystemFeaturesSection from '@/components/srs/sections/SystemFeaturesSection';
+import SystemUseCasesSection from '@/components/srs/sections/SystemUseCasesSection';
 import FunctionalRequirementsSection from '@/components/srs/sections/FunctionalRequirementsSection';
 import NonFunctionalRequirementsSection from '@/components/srs/sections/NonFunctionalRequirementsSection';
 import NonFunctionalRequirementsSectionNew from '@/components/srs/sections/NonFunctionalRequirementsSectionNew';
+import OtherNonfunctionalRequirementsSection from '@/components/srs/sections/OtherNonfunctionalRequirementsSection';
 import AppendicesSection from '@/components/srs/sections/AppendicesSection';
 import { exportSRSToDocx } from '@/lib/docxExport';
 import { generateSRSFromTemplate } from '@/lib/srsTemplateGenerator';
@@ -32,30 +34,60 @@ interface FormData {
 
 interface EditableContent {
   title: string;
-  introduction: {
+  // New API Format 1: With introduction containing purpose and references
+  introduction?: {
     purpose: string;
-    scope: string;
-    definitions: string[];
+    references?: string[];
+    scope?: string;
+    definitions?: string[];
   };
-  overallDescription: {
-    productPerspective: string;
-    productFunctions: string[];
-    userCharacteristics: string[];
-    constraints: string[];
-    assumptions: string[];
+  overallDescription?: {
+    userClassesAndCharacteristics?: string[];
+    operatingEnvironment?: string;
+    designAndImplementationConstraints?: string[];
+    assumptionsAndDependencies?: string[];
+    // Legacy format support
+    productPerspective?: string;
+    productFunctions?: string[];
+    userCharacteristics?: string[];
+    constraints?: string[];
+    assumptions?: string[];
   };
-  functionalRequirements: Array<{
+  externalInterfaceRequirements?: {
+    userInterfaces?: string;
+    hardwareInterfaces?: string;
+    softwareInterfaces?: string[];
+    communicationInterfaces?: string;
+  };
+  systemUseCases?: Array<{
+    name: string;
+    identifier: string;
+    description: string;
+    actors: string[];
+    preconditions: string;
+    mainFlow: string[];
+    alternativeFlow: string[];
+  }>;
+  functionalRequirements?: Array<{
     id: string;
     title: string;
     description: string;
     priority: string;
   }>;
-  nonFunctionalRequirements: Array<{
+  nonFunctionalRequirements?: Array<{
     id: string;
     category: string;
     description: string;
     priority: string;
   }>;
+  otherNonfunctionalRequirements?: {
+    performanceRequirements?: string[];
+    safetyRequirements?: string[];
+    securityRequirements?: string[];
+    softwareQualityAttributes?: string[];
+  };
+  otherRequirements?: string;
+  systemRequirementsChart?: string;
   // Legacy fields for backwards compatibility
   introduction_purpose?: string;
   introduction_scope?: string;
@@ -180,25 +212,67 @@ export default function SRSResultsPage() {
           if (content.title && content.introduction && content.overallDescription) {
             // New API format - use directly
             setEditableContent(content as EditableContent);
+          } else if (content.title && content.introduction?.purpose) {
+            // Also new format - check for purpose in introduction (with references)
+            setEditableContent(content as EditableContent);
           } else {
             // Legacy format - map to new structure
             setEditableContent(prev => ({
               ...prev,
-              ...content,
-              // Ensure legacy fields are also populated for backwards compatibility
-              introduction_purpose: content.introduction?.purpose || content.introduction_purpose || prev.introduction_purpose,
-              introduction_scope: content.introduction?.scope || content.introduction_scope || prev.introduction_scope,
-              introduction_product: content.introduction_product || prev.introduction_product,
-              introduction_references: content.introduction?.definitions || content.introduction_references || prev.introduction_references,
-              product_perspective: content.overallDescription?.productPerspective || content.product_perspective || prev.product_perspective,
-              product_functions: content.overallDescription?.productFunctions || content.product_functions || prev.product_functions,
-              user_characteristics: Array.isArray(content.overallDescription?.userCharacteristics)
+              title: content.title || prev.title,
+              introduction: {
+                purpose: content.introduction?.purpose || content.introduction_purpose || prev.introduction?.purpose || '',
+                references: content.introduction?.references || content.introduction?.definitions || content.introduction_references || prev.introduction?.references || [],
+                scope: content.introduction?.scope || content.introduction_scope || prev.introduction?.scope || '',
+                definitions: content.introduction?.definitions || prev.introduction?.definitions || []
+              },
+              overallDescription: {
+                userClassesAndCharacteristics: content.overallDescription?.userClassesAndCharacteristics || (Array.isArray(content.overallDescription?.userCharacteristics) ? content.overallDescription.userCharacteristics : [content.overallDescription?.userCharacteristics || '']),
+                operatingEnvironment: content.overallDescription?.operatingEnvironment || '',
+                designAndImplementationConstraints: content.overallDescription?.designAndImplementationConstraints || content.overallDescription?.constraints || [],
+                assumptionsAndDependencies: content.overallDescription?.assumptionsAndDependencies || (Array.isArray(content.overallDescription?.assumptions) ? content.overallDescription.assumptions : []),
+                // Also set legacy fields
+                productPerspective: content.overallDescription?.productPerspective || content.product_perspective || prev.overallDescription?.productPerspective || '',
+                productFunctions: content.overallDescription?.productFunctions || content.product_functions || prev.overallDescription?.productFunctions || [],
+                userCharacteristics: content.overallDescription?.userCharacteristics || [],
+                constraints: content.overallDescription?.constraints || prev.overallDescription?.constraints || [],
+                assumptions: content.overallDescription?.assumptions || prev.overallDescription?.assumptions || []
+              },
+              externalInterfaceRequirements: content.externalInterfaceRequirements || {
+                userInterfaces: content.user_interfaces || '',
+                hardwareInterfaces: content.hardware_interfaces || '',
+                softwareInterfaces: content.software_interfaces || [],
+                communicationInterfaces: content.communication_interfaces || ''
+              },
+              systemUseCases: content.systemUseCases || [],
+              functionalRequirements: content.functionalRequirements || [],
+              nonFunctionalRequirements: content.nonFunctionalRequirements || [],
+              otherNonfunctionalRequirements: content.otherNonfunctionalRequirements || {
+                performanceRequirements: [],
+                safetyRequirements: [],
+                securityRequirements: [],
+                softwareQualityAttributes: []
+              },
+              otherRequirements: content.otherRequirements || '',
+              systemRequirementsChart: content.systemRequirementsChart || '',
+              // Legacy fields
+              introduction_purpose: content.introduction?.purpose || content.introduction_purpose || prev.introduction_purpose || '',
+              introduction_scope: content.introduction?.scope || content.introduction_scope || prev.introduction_scope || '',
+              introduction_product: content.introduction_product || prev.introduction_product || '',
+              introduction_references: content.introduction?.references || content.introduction?.definitions || content.introduction_references || prev.introduction_references || [],
+              product_perspective: content.overallDescription?.productPerspective || content.product_perspective || prev.product_perspective || '',
+              product_functions: content.overallDescription?.productFunctions || content.product_functions || prev.product_functions || [],
+              user_characteristics: content.overallDescription?.userCharacteristics && Array.isArray(content.overallDescription.userCharacteristics)
                 ? content.overallDescription.userCharacteristics.join(', ')
-                : content.user_characteristics || prev.user_characteristics,
-              constraints: content.overallDescription?.constraints || content.constraints || prev.constraints,
-              assumptions_dependencies: Array.isArray(content.overallDescription?.assumptions)
+                : content.user_characteristics || prev.user_characteristics || '',
+              constraints: content.overallDescription?.constraints || content.constraints || prev.constraints || [],
+              assumptions_dependencies: content.overallDescription?.assumptions && Array.isArray(content.overallDescription.assumptions)
                 ? content.overallDescription.assumptions.join(', ')
-                : content.assumptions_dependencies || prev.assumptions_dependencies
+                : content.assumptions_dependencies || prev.assumptions_dependencies || '',
+              user_interfaces: content.externalInterfaceRequirements?.userInterfaces || content.user_interfaces || prev.user_interfaces || '',
+              hardware_interfaces: content.externalInterfaceRequirements?.hardwareInterfaces || content.hardware_interfaces || prev.hardware_interfaces || '',
+              software_interfaces: content.externalInterfaceRequirements?.softwareInterfaces || content.software_interfaces || prev.software_interfaces || [],
+              communication_interfaces: content.externalInterfaceRequirements?.communicationInterfaces || content.communication_interfaces || prev.communication_interfaces || ''
             }));
           }
         } else {
@@ -401,65 +475,185 @@ export default function SRSResultsPage() {
                     purpose={editableContent.introduction?.purpose || ''}
                     scope={editableContent.introduction?.scope || ''}
                     definitions={editableContent.introduction?.definitions || []}
+                    references={editableContent.introduction?.references || []}
                     isEditing={isEditing}
                     onUpdatePurpose={(val) =>
                       setEditableContent({
                         ...editableContent,
-                        introduction: { ...editableContent.introduction, purpose: val }
+                        introduction: {
+                          purpose: val,
+                          references: editableContent.introduction?.references || [],
+                          scope: editableContent.introduction?.scope,
+                          definitions: editableContent.introduction?.definitions
+                        }
                       })
                     }
                     onUpdateScope={(val) =>
                       setEditableContent({
                         ...editableContent,
-                        introduction: { ...editableContent.introduction, scope: val }
+                        introduction: {
+                          purpose: editableContent.introduction?.purpose || '',
+                          references: editableContent.introduction?.references || [],
+                          scope: val,
+                          definitions: editableContent.introduction?.definitions
+                        }
                       })
                     }
                     onUpdateDefinitions={(val) =>
                       setEditableContent({
                         ...editableContent,
-                        introduction: { ...editableContent.introduction, definitions: val }
+                        introduction: {
+                          purpose: editableContent.introduction?.purpose || '',
+                          references: editableContent.introduction?.references || [],
+                          scope: editableContent.introduction?.scope,
+                          definitions: val
+                        }
+                      })
+                    }
+                    onUpdateReferences={(val) =>
+                      setEditableContent({
+                        ...editableContent,
+                        introduction: {
+                          purpose: editableContent.introduction?.purpose || '',
+                          references: val,
+                          scope: editableContent.introduction?.scope,
+                          definitions: editableContent.introduction?.definitions
+                        }
                       })
                     }
                   />
 
                   <OverallDescriptionSectionNew
+                    // New API format fields
+                    userClassesAndCharacteristics={editableContent.overallDescription?.userClassesAndCharacteristics || []}
+                    operatingEnvironment={editableContent.overallDescription?.operatingEnvironment || ''}
+                    designAndImplementationConstraints={editableContent.overallDescription?.designAndImplementationConstraints || []}
+                    assumptionsAndDependencies={editableContent.overallDescription?.assumptionsAndDependencies || []}
+                    // Legacy format fields
                     productPerspective={editableContent.overallDescription?.productPerspective || ''}
                     productFunctions={editableContent.overallDescription?.productFunctions || []}
                     userCharacteristics={editableContent.overallDescription?.userCharacteristics || []}
                     constraints={editableContent.overallDescription?.constraints || []}
                     assumptions={editableContent.overallDescription?.assumptions || []}
                     isEditing={isEditing}
+                    // New API format handlers
+                    onUpdateUserClassesAndCharacteristics={(val) =>
+                      setEditableContent({
+                        ...editableContent,
+                        overallDescription: {
+                          ...editableContent.overallDescription,
+                          userClassesAndCharacteristics: val
+                        } as any
+                      })
+                    }
+                    onUpdateOperatingEnvironment={(val) =>
+                      setEditableContent({
+                        ...editableContent,
+                        overallDescription: {
+                          ...editableContent.overallDescription,
+                          operatingEnvironment: val
+                        } as any
+                      })
+                    }
+                    onUpdateDesignAndImplementationConstraints={(val) =>
+                      setEditableContent({
+                        ...editableContent,
+                        overallDescription: {
+                          ...editableContent.overallDescription,
+                          designAndImplementationConstraints: val
+                        } as any
+                      })
+                    }
+                    onUpdateAssumptionsAndDependencies={(val) =>
+                      setEditableContent({
+                        ...editableContent,
+                        overallDescription: {
+                          ...editableContent.overallDescription,
+                          assumptionsAndDependencies: val
+                        } as any
+                      })
+                    }
+                    // Legacy format handlers
                     onUpdateProductPerspective={(val) =>
                       setEditableContent({
                         ...editableContent,
-                        overallDescription: { ...editableContent.overallDescription, productPerspective: val }
+                        overallDescription: {
+                          ...editableContent.overallDescription,
+                          productPerspective: val
+                        } as any
                       })
                     }
                     onUpdateProductFunctions={(val) =>
                       setEditableContent({
                         ...editableContent,
-                        overallDescription: { ...editableContent.overallDescription, productFunctions: val }
+                        overallDescription: {
+                          ...editableContent.overallDescription,
+                          productFunctions: val
+                        } as any
                       })
                     }
                     onUpdateUserCharacteristics={(val) =>
                       setEditableContent({
                         ...editableContent,
-                        overallDescription: { ...editableContent.overallDescription, userCharacteristics: val }
+                        overallDescription: {
+                          ...editableContent.overallDescription,
+                          userCharacteristics: val
+                        } as any
                       })
                     }
                     onUpdateConstraints={(val) =>
                       setEditableContent({
                         ...editableContent,
-                        overallDescription: { ...editableContent.overallDescription, constraints: val }
+                        overallDescription: {
+                          ...editableContent.overallDescription,
+                          constraints: val
+                        } as any
                       })
                     }
                     onUpdateAssumptions={(val) =>
                       setEditableContent({
                         ...editableContent,
-                        overallDescription: { ...editableContent.overallDescription, assumptions: val }
+                        overallDescription: {
+                          ...editableContent.overallDescription,
+                          assumptions: val
+                        } as any
                       })
                     }
                   />
+
+                  {editableContent.externalInterfaceRequirements && (
+                    <ExternalInterfaceRequirementsSection
+                      userInterfaces={editableContent.externalInterfaceRequirements.userInterfaces || ''}
+                      hardwareInterfaces={editableContent.externalInterfaceRequirements.hardwareInterfaces || ''}
+                      softwareInterfaces={editableContent.externalInterfaceRequirements.softwareInterfaces || []}
+                      communicationInterfaces={editableContent.externalInterfaceRequirements.communicationInterfaces || ''}
+                      isEditing={isEditing}
+                      onUpdateUserInterfaces={(val) =>
+                        setEditableContent({
+                          ...editableContent,
+                          externalInterfaceRequirements: { ...editableContent.externalInterfaceRequirements, userInterfaces: val }
+                        })
+                      }
+                      onUpdateHardwareInterfaces={(val) =>
+                        setEditableContent({
+                          ...editableContent,
+                          externalInterfaceRequirements: { ...editableContent.externalInterfaceRequirements, hardwareInterfaces: val }
+                        })
+                      }
+                      onUpdateSoftwareInterfaces={(val) =>
+                        setEditableContent({
+                          ...editableContent,
+                          externalInterfaceRequirements: { ...editableContent.externalInterfaceRequirements, softwareInterfaces: val }
+                        })
+                      }
+                      onUpdateCommunicationInterfaces={(val) =>
+                        setEditableContent({
+                          ...editableContent,
+                          externalInterfaceRequirements: { ...editableContent.externalInterfaceRequirements, communicationInterfaces: val }
+                        })
+                      }
+                    />
+                  )}
 
                   <FunctionalRequirementsSection
                     requirements={editableContent.functionalRequirements || []}
@@ -486,6 +680,55 @@ export default function SRSResultsPage() {
                       });
                     }}
                   />
+
+                  {editableContent.systemUseCases && editableContent.systemUseCases.length > 0 && (
+                    <SystemUseCasesSection
+                      useCases={editableContent.systemUseCases}
+                      isEditing={isEditing}
+                      onUpdateUseCase={(index: number, useCase: any) => {
+                        const updated = [...(editableContent.systemUseCases || [])];
+                        updated[index] = useCase;
+                        setEditableContent({
+                          ...editableContent,
+                          systemUseCases: updated
+                        });
+                      }}
+                    />
+                  )}
+
+                  {editableContent.otherNonfunctionalRequirements && (
+                    <OtherNonfunctionalRequirementsSection
+                      performanceRequirements={editableContent.otherNonfunctionalRequirements.performanceRequirements || []}
+                      safetyRequirements={editableContent.otherNonfunctionalRequirements.safetyRequirements || []}
+                      securityRequirements={editableContent.otherNonfunctionalRequirements.securityRequirements || []}
+                      softwareQualityAttributes={editableContent.otherNonfunctionalRequirements.softwareQualityAttributes || []}
+                      isEditing={isEditing}
+                      onUpdatePerformanceRequirements={(val) =>
+                        setEditableContent({
+                          ...editableContent,
+                          otherNonfunctionalRequirements: { ...editableContent.otherNonfunctionalRequirements, performanceRequirements: val }
+                        })
+                      }
+                      onUpdateSafetyRequirements={(val) =>
+                        setEditableContent({
+                          ...editableContent,
+                          otherNonfunctionalRequirements: { ...editableContent.otherNonfunctionalRequirements, safetyRequirements: val }
+                        })
+                      }
+                      onUpdateSecurityRequirements={(val) =>
+                        setEditableContent({
+                          ...editableContent,
+                          otherNonfunctionalRequirements: { ...editableContent.otherNonfunctionalRequirements, securityRequirements: val }
+                        })
+                      }
+                      onUpdateSoftwareQualityAttributes={(val) =>
+                        setEditableContent({
+                          ...editableContent,
+                          otherNonfunctionalRequirements: { ...editableContent.otherNonfunctionalRequirements, softwareQualityAttributes: val }
+                        })
+                      }
+                    />
+                  )}
                 </>
               ) : (
                 // Legacy Format

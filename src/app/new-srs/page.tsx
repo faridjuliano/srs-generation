@@ -14,7 +14,7 @@ export default function NewSRSPage() {
   const router = useRouter();
   const [projectName, setProjectName] = useState('');
   const [projectVision, setProjectVision] = useState('');
-  const [srsStandard, setSrsStandard] = useState('IEEE 830-1998 (Recommended)');
+  const [srsStandard, setSrsStandard] = useState('IEEE 830-1998');
   const [toneDetail, setToneDetail] = useState('Technical & Formal');
   const [outputLanguage, setOutputLanguage] = useState('English (US)');
   const [autoDetectActors, setAutoDetectActors] = useState(true);

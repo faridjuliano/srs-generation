@@ -4,17 +4,27 @@ import { EditableText } from '../EditableText';
 import { EditableList } from '../EditableList';
 
 interface OverallDescriptionSectionNewProps {
-  productPerspective: string;
-  productFunctions: string[];
-  userCharacteristics: string[];
-  constraints: string[];
-  assumptions: string[];
+  productPerspective?: string;
+  productFunctions?: string[];
+  userCharacteristics?: string[];
+  constraints?: string[];
+  assumptions?: string[];
+  // New API format fields
+  userClassesAndCharacteristics?: string[];
+  operatingEnvironment?: string;
+  designAndImplementationConstraints?: string[];
+  assumptionsAndDependencies?: string[];
   isEditing: boolean;
-  onUpdateProductPerspective: (value: string) => void;
-  onUpdateProductFunctions: (value: string[]) => void;
-  onUpdateUserCharacteristics: (value: string[]) => void;
-  onUpdateConstraints: (value: string[]) => void;
-  onUpdateAssumptions: (value: string[]) => void;
+  onUpdateProductPerspective?: (value: string) => void;
+  onUpdateProductFunctions?: (value: string[]) => void;
+  onUpdateUserCharacteristics?: (value: string[]) => void;
+  onUpdateConstraints?: (value: string[]) => void;
+  onUpdateAssumptions?: (value: string[]) => void;
+  // New API format handlers
+  onUpdateUserClassesAndCharacteristics?: (value: string[]) => void;
+  onUpdateOperatingEnvironment?: (value: string) => void;
+  onUpdateDesignAndImplementationConstraints?: (value: string[]) => void;
+  onUpdateAssumptionsAndDependencies?: (value: string[]) => void;
 }
 
 export const OverallDescriptionSectionNew: React.FC<OverallDescriptionSectionNewProps> = ({
@@ -23,24 +33,86 @@ export const OverallDescriptionSectionNew: React.FC<OverallDescriptionSectionNew
   userCharacteristics = [],
   constraints = [],
   assumptions = [],
+  // New API format fields
+  userClassesAndCharacteristics = [],
+  operatingEnvironment = '',
+  designAndImplementationConstraints = [],
+  assumptionsAndDependencies = [],
   isEditing,
   onUpdateProductPerspective,
   onUpdateProductFunctions,
   onUpdateUserCharacteristics,
   onUpdateConstraints,
-  onUpdateAssumptions
+  onUpdateAssumptions,
+  // New API format handlers
+  onUpdateUserClassesAndCharacteristics,
+  onUpdateOperatingEnvironment,
+  onUpdateDesignAndImplementationConstraints,
+  onUpdateAssumptionsAndDependencies
 }) => {
   const safeProductFunctions = Array.isArray(productFunctions) ? productFunctions : [];
   const safeUserCharacteristics = Array.isArray(userCharacteristics) ? userCharacteristics : [];
   const safeConstraints = Array.isArray(constraints) ? constraints : [];
   const safeAssumptions = Array.isArray(assumptions) ? assumptions : [];
 
+  // New API format
+  const safeUserClassesAndCharacteristics = Array.isArray(userClassesAndCharacteristics) ? userClassesAndCharacteristics : [];
+  const safeDesignAndImplementationConstraints = Array.isArray(designAndImplementationConstraints) ? designAndImplementationConstraints : [];
+  const safeAssumptionsAndDependencies = Array.isArray(assumptionsAndDependencies) ? assumptionsAndDependencies : [];
+
+  // Determine which format to use
+  const isNewFormat = safeUserClassesAndCharacteristics.length > 0 || operatingEnvironment || safeDesignAndImplementationConstraints.length > 0 || safeAssumptionsAndDependencies.length > 0;
+
+  if (isNewFormat) {
+    // Render new API format
+    return (
+      <Section number="2" title="Overall Description">
+        <Subsection number="2.1" title="User Classes and Characteristics">
+          <EditableList
+            items={safeUserClassesAndCharacteristics}
+            onChange={onUpdateUserClassesAndCharacteristics || (() => {})}
+            isEditing={isEditing}
+            buttonLabel="Add User Class"
+          />
+        </Subsection>
+
+        <Subsection number="2.2" title="Operating Environment">
+          <EditableText
+            value={operatingEnvironment}
+            onChange={onUpdateOperatingEnvironment || (() => {})}
+            isEditing={isEditing}
+            rows={4}
+          />
+        </Subsection>
+
+        <Subsection number="2.3" title="Design and Implementation Constraints">
+          <EditableList
+            items={safeDesignAndImplementationConstraints}
+            onChange={onUpdateDesignAndImplementationConstraints || (() => {})}
+            isEditing={isEditing}
+            buttonLabel="Add Constraint"
+          />
+        </Subsection>
+
+        <Subsection number="2.4" title="Assumptions and Dependencies">
+          <EditableList
+            items={safeAssumptionsAndDependencies}
+            onChange={onUpdateAssumptionsAndDependencies || (() => {})}
+            isEditing={isEditing}
+            buttonLabel="Add Assumption"
+          />
+        </Subsection>
+      </Section>
+    );
+  }
+
+  // Render legacy format
   return (
     <Section number="2" title="Overall Description">
       <Subsection number="2.1" title="Product Perspective">
         <EditableText
           value={productPerspective}
-          onChange={onUpdateProductPerspective}
+          onChange={onUpdateProductPerspective || (() => {})}
           isEditing={isEditing}
           rows={4}
         />
@@ -49,7 +121,7 @@ export const OverallDescriptionSectionNew: React.FC<OverallDescriptionSectionNew
       <Subsection number="2.2" title="Product Functions">
         <EditableList
           items={safeProductFunctions}
-          onChange={onUpdateProductFunctions}
+          onChange={onUpdateProductFunctions || (() => {})}
           isEditing={isEditing}
           buttonLabel="Add Function"
         />
@@ -58,7 +130,7 @@ export const OverallDescriptionSectionNew: React.FC<OverallDescriptionSectionNew
       <Subsection number="2.3" title="User Characteristics">
         <EditableList
           items={safeUserCharacteristics}
-          onChange={onUpdateUserCharacteristics}
+          onChange={onUpdateUserCharacteristics || (() => {})}
           isEditing={isEditing}
           buttonLabel="Add User Characteristic"
         />
@@ -67,7 +139,7 @@ export const OverallDescriptionSectionNew: React.FC<OverallDescriptionSectionNew
       <Subsection number="2.4" title="Constraints">
         <EditableList
           items={safeConstraints}
-          onChange={onUpdateConstraints}
+          onChange={onUpdateConstraints || (() => {})}
           isEditing={isEditing}
           buttonLabel="Add Constraint"
         />
@@ -76,7 +148,7 @@ export const OverallDescriptionSectionNew: React.FC<OverallDescriptionSectionNew
       <Subsection number="2.5" title="Assumptions and Dependencies">
         <EditableList
           items={safeAssumptions}
-          onChange={onUpdateAssumptions}
+          onChange={onUpdateAssumptions || (() => {})}
           isEditing={isEditing}
           buttonLabel="Add Assumption"
         />
