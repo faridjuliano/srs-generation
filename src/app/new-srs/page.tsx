@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { generateSRSFromTemplate } from '@/lib/srsTemplateGenerator';
+import Link from "next/link";
 
 interface RecentProject {
   id: string;
@@ -171,6 +172,29 @@ export default function NewSRSPage() {
 
   const charCount = projectVision.length;
 
+  const getPromptPlaceholder = () => {
+    const basePrompt = "Describe your software in natural language. For example:";
+
+    if (srsStandard === 'ISO/IEC/IEEE 29148:2018') {
+      return `${basePrompt}
+'Our company needs a cloud-based project management platform.
+Primary users: Project Managers, Team Leads, and Developers.
+Key capabilities: Real-time collaboration, task tracking, time logging, and resource allocation.
+Must integrate with Jira and Slack APIs for seamless workflow.
+Performance: Should support 500+ concurrent users with <100ms response times.
+Security: AES-256 encryption, OAuth 2.0 authentication, and ISO 27001 compliance.
+The system must maintain 99.9% uptime and provide automated backup and disaster recovery.'`;
+    } else {
+      // IEEE 830-1998 format
+      return `${basePrompt}
+'We need a web-based inventory system for a mid-sized retail chain.
+Users should include Administrators, Store Managers, and Warehouse Staff.
+The system must handle real-time stock updates across 20 locations.
+It needs to integrate with Shopify API for online orders.
+Security is critical, requiring 2FA for all admin actions.'`;
+    }
+  };
+
   return (
     <div className="flex h-screen w-full overflow-hidden">
       {/* Mobile Menu Button */}
@@ -204,7 +228,8 @@ export default function NewSRSPage() {
         <div className="px-4 mb-2">
           <button className="w-full flex items-center gap-2 bg-primary text-white px-3 py-2.5 rounded-lg shadow-md shadow-blue-500/20 hover:bg-blue-700 transition-colors">
             <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add_circle</span>
-            <span className="text-sm font-bold">New SRS Project</span>
+            <Link href={"/new-srs"} className="text-sm font-bold">New SRS Project</Link>
+            {/*<Link to="/new-srs" className="text-sm font-bold">New SRS Project</Link>*/}
           </button>
         </div>
         <div className="flex flex-col gap-1 px-4 py-2 flex-1 overflow-y-auto">
@@ -309,12 +334,7 @@ export default function NewSRSPage() {
                     <div className="relative group">
                       <textarea
                         className="w-full h-48 lg:h-64 rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#202434] text-sm p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary dark:text-white leading-relaxed resize-y"
-                        placeholder="Describe your software in natural language. For example:
-'We need a web-based inventory system for a mid-sized retail chain.
-Users should include Administrators, Store Managers, and Warehouse Staff.
-The system must handle real-time stock updates across 20 locations.
-It needs to integrate with Shopify API for online orders.
-Security is critical, requiring 2FA for all admin actions.'"
+                        placeholder={getPromptPlaceholder()}
                         value={projectVision}
                         onChange={(e) => setProjectVision(e.target.value)}
                         maxLength={5000}

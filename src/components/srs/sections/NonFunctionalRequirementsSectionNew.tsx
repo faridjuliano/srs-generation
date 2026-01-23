@@ -76,6 +76,11 @@ export const NonFunctionalRequirementsSectionNew: React.FC<NonFunctionalRequirem
   return (
     <Section number="4" title="Non-Functional Requirements">
       <div className="space-y-8">
+        {safeRequirements.length === 0 && !isEditing && (
+          <p className="text-slate-500 dark:text-slate-400 italic text-sm">
+            No non-functional requirements defined yet.
+          </p>
+        )}
         {Object.entries(groupedByCategory).map(([category, reqs], categoryIndex) => {
           const colors = categoryColors[category] || categoryColors.Reliability;
           const subsectionNumber = `4.${categoryIndex + 1}`;

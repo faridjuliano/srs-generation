@@ -66,9 +66,10 @@ export const LeftSidebarContent: React.FC<LeftSidebarContentProps> = ({
 
   const handleProjectClick = (project: RecentProject) => {
     // Store the selected project in localStorage for the results page
-    const generatedData = localStorage.getItem('srs-generated');
+    const generatedData = localStorage.getItem('srs-recent-projects');
     if (generatedData) {
       const data = JSON.parse(generatedData);
+      // data.find(p => p.id === project.id).selected = true;
       if (data.projectName !== project.projectName) {
         // Project changed, navigate to new project
         router.push('/new-srs');

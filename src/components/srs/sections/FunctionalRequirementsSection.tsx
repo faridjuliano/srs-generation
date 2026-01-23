@@ -35,6 +35,11 @@ export const FunctionalRequirementsSection: React.FC<FunctionalRequirementsSecti
     <Section number="3" title="System Requirements">
       <Subsection number="3.1" title="Functional Requirements">
         <div className="space-y-6">
+          {safeRequirements.length === 0 && !isEditing && (
+            <p className="text-slate-500 dark:text-slate-400 italic text-sm">
+              No functional requirements defined yet.
+            </p>
+          )}
           {safeRequirements.map((requirement, index) => (
             <div
               key={requirement.id || index}

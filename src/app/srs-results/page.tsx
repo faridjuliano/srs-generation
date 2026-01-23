@@ -210,11 +210,68 @@ export default function SRSResultsPage() {
 
           // Check if it's the new API format with title, introduction, overallDescription, etc.
           if (content.title && content.introduction && content.overallDescription) {
-            // New API format - use directly
-            setEditableContent(content as EditableContent);
+            // New API format - merge with defaults to ensure all fields exist
+            setEditableContent(prev => ({
+              ...prev,
+              ...content,
+              // Ensure critical arrays exist even if empty
+              functionalRequirements: content.functionalRequirements || [],
+              nonFunctionalRequirements: content.nonFunctionalRequirements || [],
+              systemUseCases: content.systemUseCases || [],
+              introduction: {
+                purpose: content.introduction?.purpose || '',
+                references: content.introduction?.references || [],
+                scope: content.introduction?.scope,
+                definitions: content.introduction?.definitions
+              },
+              overallDescription: {
+                ...content.overallDescription
+              },
+              externalInterfaceRequirements: content.externalInterfaceRequirements || {
+                userInterfaces: '',
+                hardwareInterfaces: '',
+                softwareInterfaces: [],
+                communicationInterfaces: ''
+              },
+              otherNonfunctionalRequirements: content.otherNonfunctionalRequirements || {
+                performanceRequirements: [],
+                safetyRequirements: [],
+                securityRequirements: [],
+                softwareQualityAttributes: []
+              }
+            }));
           } else if (content.title && content.introduction?.purpose) {
-            // Also new format - check for purpose in introduction (with references)
-            setEditableContent(content as EditableContent);
+            // Also new format - merge with defaults
+            setEditableContent(prev => ({
+              ...prev,
+              ...content,
+              // Ensure critical arrays exist even if empty
+              functionalRequirements: content.functionalRequirements || [],
+              nonFunctionalRequirements: content.nonFunctionalRequirements || [],
+              systemUseCases: content.systemUseCases || [],
+              introduction: {
+                purpose: content.introduction?.purpose || '',
+                references: content.introduction?.references || [],
+                scope: content.introduction?.scope,
+                definitions: content.introduction?.definitions
+              },
+              overallDescription: {
+                ...prev.overallDescription,
+                ...content.overallDescription
+              },
+              externalInterfaceRequirements: content.externalInterfaceRequirements || {
+                userInterfaces: '',
+                hardwareInterfaces: '',
+                softwareInterfaces: [],
+                communicationInterfaces: ''
+              },
+              otherNonfunctionalRequirements: content.otherNonfunctionalRequirements || {
+                performanceRequirements: [],
+                safetyRequirements: [],
+                securityRequirements: [],
+                softwareQualityAttributes: []
+              }
+            }));
           } else {
             // Legacy format - map to new structure
             setEditableContent(prev => ({
