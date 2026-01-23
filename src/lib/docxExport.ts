@@ -96,6 +96,8 @@ interface DocxExportOptions {
   formData?: FormData;
 }
 
+type HeadingLevelValue = (typeof HeadingLevel)[keyof typeof HeadingLevel];
+
 export const exportSRSToDocx = async (options: DocxExportOptions) => {
   try {
     const { filename = 'SRS_Document.docx', content, formData } = options;
@@ -103,7 +105,7 @@ export const exportSRSToDocx = async (options: DocxExportOptions) => {
     const sections: Paragraph[] = [];
 
     // Small helpers to reduce repetition
-    const addHeading = (text: string, level: HeadingLevel) => {
+    const addHeading = (text: string, level: HeadingLevelValue) => {
       sections.push(new Paragraph({
         text,
         heading: level,
