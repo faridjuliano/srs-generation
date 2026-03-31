@@ -3,8 +3,6 @@ import React from 'react';
 interface DocumentHeaderProps {
   projectName: string;
   srsStandard: string;
-  toneDetail: string;
-  outputLanguage: string;
   isEditing: boolean;
   onEditToggle: () => void;
 }
@@ -12,8 +10,6 @@ interface DocumentHeaderProps {
 export const DocumentHeader: React.FC<DocumentHeaderProps> = ({
   projectName,
   srsStandard,
-  toneDetail,
-  outputLanguage,
   isEditing,
   onEditToggle
 }) => {
@@ -25,7 +21,7 @@ export const DocumentHeader: React.FC<DocumentHeaderProps> = ({
             {projectName || 'Project SRS'}
           </h1>
           <p className="text-xs lg:text-base text-slate-500 dark:text-slate-400 line-clamp-2 lg:line-clamp-none">
-            Generated using {srsStandard} standard • {toneDetail} tone • {outputLanguage}
+            Generated using {srsStandard} standard
           </p>
         </div>
         <div className="flex items-center gap-2 lg:gap-3 flex-shrink-0 w-full lg:w-auto">
@@ -54,4 +50,3 @@ export const DocumentHeader: React.FC<DocumentHeaderProps> = ({
 };
 
 export default DocumentHeader;
-

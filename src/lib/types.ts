@@ -22,4 +22,6 @@ export interface ChatResponseBody {
   error?: string;
   // Retrieved snippets appended for PURE search results
   retrieved?: Array<{ id: string; score?: number; text: string; source?: string; meta?: unknown }>;
+  // Updated SRS content from regeneration
+  updatedSRS?: Record<string, any>;
 }

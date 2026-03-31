@@ -7,9 +7,7 @@ export interface SRSFormData {
   projectName: string;
   projectVision: string;
   srsStandard: string;
-  toneDetail: string;
-  outputLanguage: string;
-  autoDetectActors?: boolean;
+  authorName?: string;
   uploadedFiles?: string[];
 }
 
@@ -61,18 +59,15 @@ export function generateSRSFromTemplate(formData: SRSFormData): EditableContent 
   const {
     projectName,
     projectVision,
-    srsStandard,
-    toneDetail,
-    outputLanguage,
-    autoDetectActors = true
+    srsStandard
   } = formData;
 
-  // Parse tone and detail level
-  const isTechnical = toneDetail === 'Technical & Formal';
-  const isConcise = toneDetail === 'Concise / High-Level';
+  // Default to a formal, detailed tone now that the UI no longer captures this selection
+  const isTechnical = true;
+  const isConcise = false;
 
   // Generate actors from project vision (simple NLP)
-  const actors = autoDetectActors ? extractActorsFromVision(projectVision) : [];
+  const actors = extractActorsFromVision(projectVision);
 
   return {
     title: `Software Requirements Specification - ${projectName}`,
@@ -111,7 +106,7 @@ export function generateSRSFromTemplate(formData: SRSFormData): EditableContent 
     nonFunctionalRequirements: generateNonFunctionalRequirements(projectName, isTechnical),
 
     // 6. OTHER REQUIREMENTS
-    otherRequirements: generateOtherRequirements(srsStandard, outputLanguage)
+    otherRequirements: generateOtherRequirements(srsStandard)
   };
 }
 
@@ -608,39 +603,38 @@ function generateNonFunctionalRequirements(_projectName: string, _isTechnical: b
   ];
 }
 
-function generateOtherRequirements(srsStandard: string, outputLanguage: string): string {
+function generateOtherRequirements(srsStandard: string): string {
   return `
-COMPLIANCE AND LEGAL REQUIREMENTS:
-- System must comply with ${srsStandard} standard for software requirements
-- All data must comply with GDPR, CCPA, and relevant data protection regulations
-- System must implement data retention policies as per regulatory requirements
-- System must maintain audit trails for compliance verification
-
-LOCALIZATION:
-- System interface shall support ${outputLanguage} language
-- Date and time formats shall respect locale settings
-- Currency and number formatting shall be locale-appropriate
-
-SCALABILITY AND FUTURE CONSIDERATIONS:
-- System architecture shall support horizontal scaling for increased load
-- Database schema shall allow for additional entities and relationships
-- API design shall maintain backward compatibility in future versions
-- System shall be designed for easy deployment to cloud infrastructure
-
-DOCUMENTATION REQUIREMENTS:
-- User documentation shall be provided for all major features
-- Administrator guide shall document configuration and maintenance
-- Technical documentation shall include architecture and design decisions
-- All source code shall include inline comments for complex logic
-
-TRAINING AND SUPPORT:
-- Development team shall provide initial user training
-- Documentation shall be accessible to all user roles
-- Support procedures shall be documented and communicated
-  `.trim();
+ COMPLIANCE AND LEGAL REQUIREMENTS:
+ - System must comply with ${srsStandard} standard for software requirements
+ - All data must comply with GDPR, CCPA, and relevant data protection regulations
+ - System must implement data retention policies as per regulatory requirements
+ - System must maintain audit trails for compliance verification
+ 
+ LOCALIZATION:
+ - System interface shall support English by default and allow future localization
+ - Date and time formats shall respect locale settings
+ - Currency and number formatting shall be locale-appropriate
+ 
+ SCALABILITY AND FUTURE CONSIDERATIONS:
+ - System architecture shall support horizontal scaling for increased load
+ - Database schema shall allow for additional entities and relationships
+ - API design shall maintain backward compatibility in future versions
+ - System shall be designed for easy deployment to cloud infrastructure
+ 
+ DOCUMENTATION REQUIREMENTS:
+ - User documentation shall be provided for all major features
+ - Administrator guide shall document configuration and maintenance
+ - Technical documentation shall include architecture and design decisions
+ - All source code shall include inline comments for complex logic
+ 
+ TRAINING AND SUPPORT:
+ - Development team shall provide initial user training
+ - Documentation shall be accessible to all user roles
+ - Support procedures shall be documented and communicated
+   `.trim();
 }
 
 function capitalizeWords(str: string): string {
   return str.replace(/\b\w/g, char => char.toUpperCase());
 }
-

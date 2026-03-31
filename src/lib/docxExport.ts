@@ -85,8 +85,6 @@ interface EditableContent {
 interface FormData {
   projectName?: string;
   srsStandard?: string;
-  toneDetail?: string;
-  outputLanguage?: string;
   uploadedFiles?: string[];
 }
 
@@ -137,16 +135,6 @@ export const exportSRSToDocx = async (options: DocxExportOptions) => {
         text: `Standard: ${formData?.srsStandard || 'IEEE 830-1998'}`,
         alignment: AlignmentType.CENTER,
         spacing: { after: 200 }
-      }),
-      new Paragraph({
-        text: `Language: ${formData?.outputLanguage || 'English'}`,
-        alignment: AlignmentType.CENTER,
-        spacing: { after: 200 }
-      }),
-      new Paragraph({
-        text: `Tone: ${formData?.toneDetail || 'Technical & Formal'}`,
-        alignment: AlignmentType.CENTER,
-        spacing: { after: 400 }
       }),
       new Paragraph({ text: '' })
     );
@@ -381,8 +369,6 @@ export const exportSRSToDocx = async (options: DocxExportOptions) => {
     sectionIndex++;
     addHeading(`${sectionIndex}. Appendices`, HeadingLevel.HEADING_1);
     addText(`SRS Standard: ${formData?.srsStandard || 'N/A'}`);
-    addText(`Tone & Detail: ${formData?.toneDetail || 'N/A'}`);
-    addText(`Output Language: ${formData?.outputLanguage || 'N/A'}`);
     if (formData?.uploadedFiles?.length) {
       addHeading('Uploaded Files', HeadingLevel.HEADING_2);
       addList(formData.uploadedFiles);

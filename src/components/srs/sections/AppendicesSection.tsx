@@ -4,21 +4,15 @@ import { MetadataGrid } from '../MetadataCard';
 
 interface AppendicesSectionProps {
   srsStandard: string;
-  toneDetail: string;
-  outputLanguage: string;
   uploadedFiles: string[];
 }
 
 export const AppendicesSection: React.FC<AppendicesSectionProps> = ({
   srsStandard,
-  toneDetail,
-  outputLanguage,
   uploadedFiles
 }) => {
   const metadataItems = [
     { label: 'SRS Standard Used', value: srsStandard },
-    { label: 'Tone & Detail Level', value: toneDetail },
-    { label: 'Output Language', value: outputLanguage },
     {
       label: 'Generated',
       value: new Date().toLocaleDateString('en-US', {
@@ -59,4 +53,3 @@ export const AppendicesSection: React.FC<AppendicesSectionProps> = ({
 };
 
 export default AppendicesSection;
-

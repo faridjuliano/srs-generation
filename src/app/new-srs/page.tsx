@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { generateSRSFromTemplate } from '@/lib/srsTemplateGenerator';
 import Link from "next/link";
+import AnalysisDrawer from '@/components/new-srs/AnalysisDrawer';
 
 interface RecentProject {
   id: string;
@@ -14,16 +15,13 @@ interface RecentProject {
 export default function NewSRSPage() {
   const router = useRouter();
   const [projectName, setProjectName] = useState('');
+  const [authorName, setAuthorName] = useState('');
   const [projectVision, setProjectVision] = useState('');
   const [srsStandard, setSrsStandard] = useState('IEEE 830-1998');
-  const [toneDetail, setToneDetail] = useState('Technical & Formal');
-  const [outputLanguage, setOutputLanguage] = useState('English (US)');
-  const [autoDetectActors, setAutoDetectActors] = useState(true);
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isAnalysisPanelOpen, setIsAnalysisPanelOpen] = useState(false);
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
 
   // Load recent projects from localStorage on component mount
@@ -59,13 +57,17 @@ export default function NewSRSPage() {
       setIsGenerating(true);
       setError(null);
 
+      if (!authorName.trim()) {
+        setError('Author name is required');
+        setIsGenerating(false);
+        return;
+      }
+
       const formData = {
         projectName,
+        authorName,
         projectVision,
         srsStandard,
-        toneDetail,
-        outputLanguage,
-        autoDetectActors,
         uploadedFiles,
       };
 
@@ -102,11 +104,9 @@ export default function NewSRSPage() {
         console.log('Using template generator as fallback');
         generatedContent = generateSRSFromTemplate({
           projectName: projectName || 'Unnamed Project',
+          authorName: authorName || 'Unknown Author',
           projectVision: projectVision || 'No vision provided',
           srsStandard: srsStandard || 'IEEE 830-1998',
-          toneDetail: toneDetail || 'Technical & Formal',
-          outputLanguage: outputLanguage || 'English (US)',
-          autoDetectActors: autoDetectActors !== false,
           uploadedFiles: uploadedFiles || []
         });
       }
@@ -289,15 +289,10 @@ Security is critical, requiring 2FA for all admin actions.'`;
             <span className="text-slate-900 dark:text-white font-medium">New SRS Generation</span>
           </nav>
           <div className="flex items-center gap-3 lg:gap-6">
-            <button
-              onClick={() => setIsAnalysisPanelOpen(!isAnalysisPanelOpen)}
-              className="lg:hidden p-2 text-slate-500 hover:text-primary transition-colors"
-            >
-              <span className="material-symbols-outlined">analytics</span>
-            </button>
-            <button className="relative p-2 text-slate-500 hover:text-primary transition-colors">
-              <span className="material-symbols-outlined">notifications</span>
-            </button>
+            {/*<AnalysisDrawer />*/}
+            {/*<button className="relative p-2 text-slate-500 hover:text-primary transition-colors">*/}
+            {/*  <span className="material-symbols-outlined">notifications</span>*/}
+            {/*</button>*/}
           </div>
         </header>
 
@@ -317,19 +312,31 @@ Security is critical, requiring 2FA for all admin actions.'`;
                     <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">Project Name</label>
                     <input
                       type="text"
-                      className="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-[#202434] text-sm p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary dark:text-white"
+                      className="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50  dark:bg-[#202434] text-sm p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary dark:text-white"
                       placeholder="e.g. Enterprise Inventory Management System"
                       value={projectName}
                       onChange={(e) => setProjectName(e.target.value)}
                     />
                   </div>
 
+                  <div>
+                    <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">
+                      Author Name
+                      <span className="text-red-500 ml-1">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#202434] text-sm p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary dark:text-white"
+                      placeholder="e.g. John Doe"
+                      value={authorName}
+                      onChange={(e) => setAuthorName(e.target.value)}
+                      required
+                    />
+                  </div>
+
                   <div className="relative">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
                       <label className="block text-sm font-bold text-slate-900 dark:text-white">Project Vision & Core Requirements</label>
-                      <button className="text-xs text-primary font-medium hover:underline flex items-center gap-1 self-start sm:self-auto">
-                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>auto_awesome</span> Use AI Templates
-                      </button>
                     </div>
                     <div className="relative group">
                       <textarea
@@ -392,42 +399,6 @@ Security is critical, requiring 2FA for all admin actions.'`;
                           <option>ISO/IEC/IEEE 29148:2018</option>
                         </select>
                       </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Tone & Detail</label>
-                        <select
-                          className="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1a1d2d] text-sm p-2.5 focus:ring-primary focus:border-primary dark:text-white"
-                          value={toneDetail}
-                          onChange={(e) => setToneDetail(e.target.value)}
-                        >
-                          <option>Technical & Formal</option>
-                          <option>Business-Oriented</option>
-                          <option>Concise / High-Level</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Output Language</label>
-                        <select
-                          className="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1a1d2d] text-sm p-2.5 focus:ring-primary focus:border-primary dark:text-white"
-                          value={outputLanguage}
-                          onChange={(e) => setOutputLanguage(e.target.value)}
-                        >
-                          <option>English (US)</option>
-                          <option>English (UK)</option>
-                          <option>Spanish</option>
-                          <option>German</option>
-                        </select>
-                      </div>
-                      <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Auto-detect Actors</span>
-                          <input
-                            type="checkbox"
-                            className="rounded border-slate-300 text-primary focus:ring-primary h-4 w-4"
-                            checked={autoDetectActors}
-                            onChange={(e) => setAutoDetectActors(e.target.checked)}
-                          />
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -478,98 +449,6 @@ Security is critical, requiring 2FA for all admin actions.'`;
           </div>
         </div>
       </main>
-
-      {/* Right Sidebar - Analysis Panel */}
-      <aside className={`w-80 h-full bg-white dark:bg-[#161926] border-l border-[#e7e9f3] dark:border-[#2a2e3b] flex flex-col flex-shrink-0 z-20 transition-all duration-300 shadow-xl fixed lg:static inset-y-0 right-0 transform ${isAnalysisPanelOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}>
-        {/* Close button for mobile */}
-        <button
-          onClick={() => setIsAnalysisPanelOpen(false)}
-          className="lg:hidden absolute top-4 right-4 p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-        >
-          <span className="material-symbols-outlined">close</span>
-        </button>
-
-        <div className="h-16 flex items-center justify-between px-5 border-b border-[#e7e9f3] dark:border-[#2a2e3b] bg-slate-50/50 dark:bg-[#1a1d2d]">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary">analytics</span>
-            <h2 className="font-bold text-slate-900 dark:text-white">Input Analysis</h2>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
-            </span>
-            <span className="text-xs font-bold text-green-600 dark:text-green-400 ml-1">Ready</span>
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto p-5 space-y-6">
-          <div className="flex flex-col gap-2">
-            <div className="flex justify-between items-end">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Input Clarity</span>
-              <span className="text-lg font-bold text-yellow-600 dark:text-yellow-400">Medium</span>
-            </div>
-            <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-              <div className="h-full bg-yellow-400 w-[45%] rounded-full"></div>
-            </div>
-            <p className="text-xs text-slate-400 mt-1">Add more details about user roles to improve analysis quality.</p>
-          </div>
-          <div className="bg-slate-50 dark:bg-[#202434] rounded-lg border border-slate-100 dark:border-slate-800 p-4">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
-              <span className="material-symbols-outlined text-slate-400" style={{ fontSize: '18px' }}>radar</span> Detected Items
-            </h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600 dark:text-slate-300">User Roles</span>
-                <span className="bg-white dark:bg-[#1a1d2d] border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded text-xs font-bold text-slate-700 dark:text-white">3</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600 dark:text-slate-300">Functional Reqs</span>
-                <span className="bg-white dark:bg-[#1a1d2d] border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded text-xs font-bold text-slate-700 dark:text-white">12</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600 dark:text-slate-300">Key Constraints</span>
-                <span className="bg-white dark:bg-[#1a1d2d] border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded text-xs font-bold text-slate-700 dark:text-white">2</span>
-              </div>
-            </div>
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-3">Real-time Suggestions</h3>
-            <div className="space-y-3">
-              <div className="flex gap-3 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/30">
-                <span className="material-symbols-outlined text-primary mt-0.5" style={{ fontSize: '18px' }}>lightbulb</span>
-                <div>
-                  <p className="text-xs font-medium text-slate-800 dark:text-slate-200">Ambiguity Check</p>
-                  <p className="text-xs text-slate-500 mt-1">Try to specify &quot;real-time&quot; latency (e.g., &lt;200ms) for better technical specs.</p>
-                </div>
-              </div>
-              <div className="flex gap-3 p-3 bg-white dark:bg-[#1a1d2d] rounded-lg border border-slate-200 dark:border-slate-700 opacity-60">
-                <span className="material-symbols-outlined text-slate-400 mt-0.5" style={{ fontSize: '18px' }}>security</span>
-                <div>
-                  <p className="text-xs font-medium text-slate-800 dark:text-slate-200">Security Gap</p>
-                  <p className="text-xs text-slate-500 mt-1">No mention of data encryption standards found yet.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Quick Templates</h3>
-            <div className="flex flex-wrap gap-2">
-              <button className="text-xs bg-white dark:bg-[#202434] hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-full px-3 py-1 text-slate-600 dark:text-slate-300 transition-colors">E-Commerce</button>
-              <button className="text-xs bg-white dark:bg-[#202434] hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-full px-3 py-1 text-slate-600 dark:text-slate-300 transition-colors">SaaS Platform</button>
-              <button className="text-xs bg-white dark:bg-[#202434] hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-full px-3 py-1 text-slate-600 dark:text-slate-300 transition-colors">Mobile App</button>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      {/* Overlay for analysis panel on mobile */}
-      {isAnalysisPanelOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-10"
-          onClick={() => setIsAnalysisPanelOpen(false)}
-        />
-      )}
     </div>
   );
 }
-

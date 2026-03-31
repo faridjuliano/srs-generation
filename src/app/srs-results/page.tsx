@@ -6,6 +6,7 @@ import DocumentHeader from '@/components/srs/DocumentHeader';
 import Sidebar from '@/components/srs/Sidebar';
 import LeftSidebarContent from '@/components/srs/layout/LeftSidebarContent';
 import RightSidebarContent from '@/components/srs/layout/RightSidebarContent';
+import ChatSidebar from '@/components/srs/ChatSidebar';
 import IntroductionSection from '@/components/srs/sections/IntroductionSection';
 import IntroductionSectionNew from '@/components/srs/sections/IntroductionSectionNew';
 import OverallDescriptionSection from '@/components/srs/sections/OverallDescriptionSection';
@@ -25,10 +26,6 @@ interface FormData {
   projectName: string;
   projectVision: string;
   srsStandard: string;
-  toneDetail: string;
-  outputLanguage: string;
-  autoDetectActors: boolean;
-  riskAnalysis: boolean;
   uploadedFiles: string[];
 }
 
@@ -121,6 +118,7 @@ export default function SRSResultsPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(false);
+  const [isChatboxOpen, setIsChatboxOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [exportStatus, setExportStatus] = useState<'idle' | 'exporting' | 'done'>('idle');
   const [editableContent, setEditableContent] = useState<EditableContent>({
@@ -339,9 +337,6 @@ export default function SRSResultsPage() {
               projectName: parsedData.projectName || 'Unnamed Project',
               projectVision: parsedData.projectVision || 'Project vision not provided',
               srsStandard: parsedData.srsStandard || 'IEEE 830-1998',
-              toneDetail: parsedData.toneDetail || 'Technical & Formal',
-              outputLanguage: parsedData.outputLanguage || 'English (US)',
-              autoDetectActors: parsedData.autoDetectActors !== false,
               uploadedFiles: parsedData.uploadedFiles || []
             });
 
@@ -499,13 +494,24 @@ export default function SRSResultsPage() {
           </nav>
           <div className="flex items-center gap-2 lg:gap-6 flex-shrink-0">
             <button
-              onClick={() => setIsInfoPanelOpen(!isInfoPanelOpen)}
-              className="lg:hidden p-2 text-slate-500 hover:text-primary transition-colors"
+              onClick={() => {
+                setIsChatboxOpen(!isChatboxOpen);
+                if (!isChatboxOpen) setIsInfoPanelOpen(false);
+              }}
+              className="p-2 text-slate-500 hover:text-primary transition-colors"
+              title="AI Assistant Chat"
+            >
+              <span className="material-symbols-outlined text-lg">smart_toy</span>
+            </button>
+            <button
+              onClick={() => {
+                setIsInfoPanelOpen(!isInfoPanelOpen);
+                if (!isInfoPanelOpen) setIsChatboxOpen(false);
+              }}
+              className="p-2 text-slate-500 hover:text-primary transition-colors"
+              title="Document Info"
             >
               <span className="material-symbols-outlined text-lg">info</span>
-            </button>
-            <button className="relative p-2 text-slate-500 hover:text-primary transition-colors hidden sm:block">
-              <span className="material-symbols-outlined">notifications</span>
             </button>
           </div>
         </header>
@@ -516,8 +522,6 @@ export default function SRSResultsPage() {
             <DocumentHeader
               projectName={formData?.projectName || ''}
               srsStandard={formData?.srsStandard || ''}
-              toneDetail={formData?.toneDetail || ''}
-              outputLanguage={formData?.outputLanguage || ''}
               isEditing={isEditing}
               onEditToggle={() => setIsEditing(!isEditing)}
             />
@@ -856,8 +860,6 @@ export default function SRSResultsPage() {
 
               <AppendicesSection
                 srsStandard={formData?.srsStandard || ''}
-                toneDetail={formData?.toneDetail || ''}
-                outputLanguage={formData?.outputLanguage || ''}
                 uploadedFiles={formData?.uploadedFiles || []}
               />
             </div>
@@ -910,16 +912,29 @@ export default function SRSResultsPage() {
         </div>
       </main>
 
-      {/* Right Sidebar - Document Info */}
-      <Sidebar
-        isOpen={isInfoPanelOpen}
-        onClose={() => setIsInfoPanelOpen(false)}
-        projectName={formData?.projectName || ''}
-        router={router}
-        position="right"
-      >
-        <RightSidebarContent onClose={() => setIsInfoPanelOpen(false)} />
-      </Sidebar>
+      {/* Right Sidebar - Document Info OR Chat */}
+      {isInfoPanelOpen && (
+        <Sidebar
+          isOpen={isInfoPanelOpen}
+          onClose={() => setIsInfoPanelOpen(false)}
+          projectName={formData?.projectName || ''}
+          router={router}
+          position="right"
+        >
+          <RightSidebarContent onClose={() => setIsInfoPanelOpen(false)} />
+        </Sidebar>
+      )}
+
+      {/* Chat Sidebar */}
+      {isChatboxOpen && (
+        <ChatSidebar
+          isOpen={isChatboxOpen}
+          onClose={() => setIsChatboxOpen(false)}
+          srsContent={editableContent}
+          formData={formData}
+          onSRSUpdate={(updatedContent) => setEditableContent(updatedContent)}
+        />
+      )}
 
       {/* Overlay for info panel on mobile */}
       {isInfoPanelOpen && (

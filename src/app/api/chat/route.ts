@@ -23,6 +23,9 @@ const chatSchema = z.object({
     .optional(),
   useRag: z.boolean().optional(),
   topK: z.number().int().positive().max(50).optional(),
+  srsContext: z.record(z.string(), z.any()).optional(),
+  formData: z.record(z.string(), z.any()).optional(),
+  isRejectionRequest: z.boolean().optional(),
 });
 
 function buildRetrievalQuery(message: string, history?: { role: string; content: string }[]) {
@@ -63,7 +66,15 @@ export async function POST(request: Request) {
     }
 
     // Preserve existing message-based flow
-    const body = parsed.data as ChatRequestBody & { message?: string; history?: { role: string; content: string }[]; useRag?: boolean; topK?: number };
+    const body = parsed.data as ChatRequestBody & { 
+      message?: string; 
+      history?: { role: 'user' | 'assistant'; content: string }[];
+      useRag?: boolean; 
+      topK?: number;
+      srsContext?: Record<string, any>;
+      formData?: Record<string, any>;
+      isRejectionRequest?: boolean;
+    };
     const messages = body.messages ?? [];
     const lastUser = messages.filter(m => m.role === 'user').at(-1);
     const userInput = body.message ?? lastUser?.content ?? '';
@@ -72,6 +83,8 @@ export async function POST(request: Request) {
 
     const useRag = body.useRag ?? false;
     const topK = body.topK ?? 4;
+    const srsContext = body.srsContext;
+    const isRegenerationRequest = body.isRejectionRequest ?? false;
 
     let contextMsg: { role: 'system' | 'user' | 'assistant'; content: string } | null = null;
     if (useRag && input.trim()) {
@@ -107,7 +120,47 @@ export async function POST(request: Request) {
     // Local deterministic response
     let content = '';
     const lower = userInput.toLowerCase();
-    if (lower.includes('generate srs')) {
+    
+    // If we have SRS context, provide targeted help
+    if (srsContext && isRegenerationRequest) {
+      // Detect which section is being requested
+      const sectionKeywords = {
+        'functional': ['functional requirements', 'functional req', 'fr', 'func req'],
+        'non-functional': ['non-functional', 'nfr', 'performance', 'security', 'quality'],
+        'introduction': ['introduction', 'purpose', 'scope'],
+        'overall': ['overall description', 'product description', 'overview'],
+        'interface': ['interface requirements', 'external interface', 'ui', 'hardware', 'software'],
+        'system features': ['system features', 'features', 'capabilities'],
+        'use cases': ['use cases', 'use case', 'actors', 'scenarios'],
+        'constraints': ['constraints', 'constraint', 'limitations', 'assumptions'],
+      };
+      
+      let detectedSection = '';
+      for (const [section, keywords] of Object.entries(sectionKeywords)) {
+        if (keywords.some(kw => lower.includes(kw))) {
+          detectedSection = section;
+          break;
+        }
+      }
+      
+      if (detectedSection) {
+        content = `I'll help you improve the ${detectedSection} section. Based on your request "${userInput}", I can:\n\n`;
+        content += `1. Add more detail and clarity\n`;
+        content += `2. Ensure completeness and consistency\n`;
+        content += `3. Align with best practices\n\n`;
+        content += `Here's an enhanced version for you to review:`;
+      } else {
+        content = `I understand you want to regenerate or improve your SRS document. Please specify which section you'd like me to focus on:\n\n`;
+        content += `- Functional Requirements\n`;
+        content += `- Non-Functional Requirements\n`;
+        content += `- Introduction\n`;
+        content += `- Overall Description\n`;
+        content += `- External Interface Requirements\n`;
+        content += `- System Features\n`;
+        content += `- Use Cases\n`;
+        content += `- Constraints & Assumptions`;
+      }
+    } else if (lower.includes('generate srs')) {
       const retrievedText = retrieved.map((r) => r.text);
       content = buildSrsSkeleton(userInput, retrievedText);
     } else if (contextMsg) {

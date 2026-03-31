@@ -5,9 +5,6 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 function generatePrompt(
   projectName: string,
   srsStandard: string,
-  toneDetail: string,
-  outputLanguage: string,
-  autoDetectActors: boolean,
   projectVision: string
 ): string {
   const standardInfo = srsStandard === 'ISO/IEC/IEEE 29148:2018'
@@ -18,9 +15,6 @@ function generatePrompt(
 
 Project Name: ${projectName}
 SRS Standard: ${srsStandard}
-Tone & Detail: ${toneDetail}
-Output Language: ${outputLanguage}
-Auto-detect Actors: ${autoDetectActors}
 
 Project Description & Requirements:
 ${projectVision}
@@ -106,7 +100,7 @@ CRITICAL INSTRUCTIONS:
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { projectName, projectVision, srsStandard, toneDetail, outputLanguage, autoDetectActors } = body;
+    const { projectName, projectVision, srsStandard } = body;
 
     if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json(
@@ -129,9 +123,6 @@ export async function POST(request: NextRequest) {
     const prompt = generatePrompt(
       projectName,
       srsStandard,
-      toneDetail,
-      outputLanguage,
-      autoDetectActors,
       projectVision
     );
 
