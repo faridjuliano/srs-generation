@@ -931,8 +931,8 @@ export default function SRSResultsPage() {
           isOpen={isChatboxOpen}
           onClose={() => setIsChatboxOpen(false)}
           srsContent={editableContent}
-          formData={formData}
-          onSRSUpdate={(updatedContent) => setEditableContent(updatedContent)}
+          formData={formData || undefined}
+          onSRSUpdate={(updatedContent) => setEditableContent(updatedContent as EditableContent)}
         />
       )}
 
