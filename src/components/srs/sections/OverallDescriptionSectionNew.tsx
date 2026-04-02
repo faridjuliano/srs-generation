@@ -3,14 +3,39 @@ import { Section, Subsection } from '../SectionHeading';
 import { EditableText } from '../EditableText';
 import { EditableList } from '../EditableList';
 
+type ListItemLike = string | {
+  id?: string;
+  name?: string;
+  description?: string;
+  technicalLevel?: string;
+  [key: string]: unknown;
+};
+
+function normalizeListItem(item: unknown): string {
+  if (typeof item === 'string') return item;
+  if (!item || typeof item !== 'object') return '';
+
+  const record = item as Record<string, unknown>;
+  const name = typeof record.name === 'string' ? record.name.trim() : '';
+  const description = typeof record.description === 'string' ? record.description.trim() : '';
+  const technicalLevel = typeof record.technicalLevel === 'string' ? record.technicalLevel.trim() : '';
+
+  const main = [name, description].filter(Boolean).join(' - ');
+  if (main) {
+    return technicalLevel ? `${main} (${technicalLevel})` : main;
+  }
+
+  return typeof record.id === 'string' ? record.id : '';
+}
+
 interface OverallDescriptionSectionNewProps {
   productPerspective?: string;
   productFunctions?: string[];
-  userCharacteristics?: string[];
+  userCharacteristics?: ListItemLike[];
   constraints?: string[];
   assumptions?: string[];
   // New API format fields
-  userClassesAndCharacteristics?: string[];
+  userClassesAndCharacteristics?: ListItemLike[];
   operatingEnvironment?: string;
   designAndImplementationConstraints?: string[];
   assumptionsAndDependencies?: string[];
@@ -51,12 +76,16 @@ export const OverallDescriptionSectionNew: React.FC<OverallDescriptionSectionNew
   onUpdateAssumptionsAndDependencies
 }) => {
   const safeProductFunctions = Array.isArray(productFunctions) ? productFunctions : [];
-  const safeUserCharacteristics = Array.isArray(userCharacteristics) ? userCharacteristics : [];
+  const safeUserCharacteristics = Array.isArray(userCharacteristics)
+    ? userCharacteristics.map(normalizeListItem).filter(Boolean)
+    : [];
   const safeConstraints = Array.isArray(constraints) ? constraints : [];
   const safeAssumptions = Array.isArray(assumptions) ? assumptions : [];
 
   // New API format
-  const safeUserClassesAndCharacteristics = Array.isArray(userClassesAndCharacteristics) ? userClassesAndCharacteristics : [];
+  const safeUserClassesAndCharacteristics = Array.isArray(userClassesAndCharacteristics)
+    ? userClassesAndCharacteristics.map(normalizeListItem).filter(Boolean)
+    : [];
   const safeDesignAndImplementationConstraints = Array.isArray(designAndImplementationConstraints) ? designAndImplementationConstraints : [];
   const safeAssumptionsAndDependencies = Array.isArray(assumptionsAndDependencies) ? assumptionsAndDependencies : [];
 

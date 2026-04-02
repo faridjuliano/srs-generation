@@ -1,62 +1,44 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { generateSRSFromTemplate } from '@/lib/srsTemplateGenerator';
 import Link from "next/link";
-import AnalysisDrawer from '@/components/new-srs/AnalysisDrawer';
 
-interface RecentProject {
-  id: string;
-  projectName: string;
-  savedAt: string;
-}
 
 export default function NewSRSPage() {
   const router = useRouter();
   const [projectName, setProjectName] = useState('');
   const [authorName, setAuthorName] = useState('');
   const [projectVision, setProjectVision] = useState('');
-  const [srsStandard, setSrsStandard] = useState('IEEE 830-1998');
+  const [srsStandard, setSrsStandard] = useState('ISO/IEC/IEEE 29148:2018');
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
 
-  // Load recent projects from localStorage on component mount
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('srs-recent-projects');
-      if (stored) {
-        const projects = JSON.parse(stored) as RecentProject[];
-        setRecentProjects(projects);
-      }
-    } catch (error) {
-      console.error('Failed to load recent projects:', error);
-    }
-  }, []);
-
-  const handleOpenRecentProject = (project: RecentProject) => {
-    // Navigate to the project's SRS results page
-    const generatedData = localStorage.getItem('srs-generated');
-    if (generatedData) {
-      const data = JSON.parse(generatedData);
-      if (data.projectName === project.projectName) {
-        // Same project, go to results
-        router.push('/srs-results');
-      } else {
-        // Different project - user can load it by clicking, but we should maintain their current context
-        router.push('/srs-results');
-      }
-    }
-  };
+  // ...existing code...
 
   const handleGenerate = async () => {
     try {
       setIsGenerating(true);
       setError(null);
 
+      // Validate Project Name
+      if (!projectName.trim()) {
+        setError('Project name is required');
+        setIsGenerating(false);
+        return;
+      }
+
+      // Validate Project Vision & Core Requirements
+      if (!projectVision.trim()) {
+        setError('Project vision and core requirements are required');
+        setIsGenerating(false);
+        return;
+      }
+
+      // Validate Author Name
       if (!authorName.trim()) {
         setError('Author name is required');
         setIsGenerating(false);
@@ -119,31 +101,6 @@ export default function NewSRSPage() {
 
       localStorage.setItem('srs-generated', JSON.stringify(generatedData));
 
-      // Update recent projects
-      try {
-        const stored = localStorage.getItem('srs-recent-projects');
-        const projects: RecentProject[] = stored ? JSON.parse(stored) : [];
-
-        const existingIndex = projects.findIndex(p => p.projectName === projectName);
-
-        if (existingIndex > -1) {
-          const [existing] = projects.splice(existingIndex, 1);
-          existing.savedAt = new Date().toISOString();
-          projects.unshift(existing);
-        } else {
-          projects.unshift({
-            id: Date.now().toString(),
-            projectName,
-            savedAt: new Date().toISOString()
-          });
-        }
-
-        const limitedProjects = projects.slice(0, 10);
-        localStorage.setItem('srs-recent-projects', JSON.stringify(limitedProjects));
-        setRecentProjects(limitedProjects);
-      } catch (storageError) {
-        console.error('Failed to update recent projects:', storageError);
-      }
 
       // Save draft
       localStorage.setItem('srs-draft', JSON.stringify({
@@ -233,32 +190,7 @@ Security is critical, requiring 2FA for all admin actions.'`;
           </button>
         </div>
         <div className="flex flex-col gap-1 px-4 py-2 flex-1 overflow-y-auto">
-          <div className="mb-4 mt-2">
-            <h2 className="px-2 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 tracking-wider">Recent Projects</h2>
-          </div>
-          {recentProjects.length > 0 ? (
-            recentProjects.map((project, index) => (
-              <button
-                key={project.id}
-                onClick={() => handleOpenRecentProject(project)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left ${
-                  index === 0 ? 'bg-slate-100 dark:bg-slate-800' : ''
-                }`}
-              >
-                <span className="material-symbols-outlined text-slate-400">folder</span>
-                <div className="flex-1 min-w-0">
-                  <span className="text-sm font-medium block truncate">{project.projectName}</span>
-                  <span className="text-xs text-slate-400 dark:text-slate-500">
-                    {new Date(project.savedAt).toLocaleDateString()}
-                  </span>
-                </div>
-              </button>
-            ))
-          ) : (
-            <p className="px-3 py-2.5 text-xs text-slate-400 dark:text-slate-500">
-              No recent projects. Create a new one to get started!
-            </p>
-          )}
+          {/* Navigation Links */}
           <div className="my-2 border-t border-slate-200 dark:border-slate-800"></div>
           <a className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
             <span className="material-symbols-outlined">settings</span>
@@ -309,7 +241,10 @@ Security is critical, requiring 2FA for all admin actions.'`;
               <div className="grid grid-cols-12 gap-4 lg:gap-8">
                 <div className="col-span-12 lg:col-span-8 flex flex-col gap-4 lg:gap-6">
                   <div>
-                    <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">Project Name</label>
+                    <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">
+                      Project Name
+                      <span className="text-red-500 ml-1">*</span>
+                    </label>
                     <input
                       type="text"
                       className="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50  dark:bg-[#202434] text-sm p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary dark:text-white"
@@ -336,7 +271,10 @@ Security is critical, requiring 2FA for all admin actions.'`;
 
                   <div className="relative">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
-                      <label className="block text-sm font-bold text-slate-900 dark:text-white">Project Vision & Core Requirements</label>
+                      <label className="block text-sm font-bold text-slate-900 dark:text-white">
+                        Project Vision & Core Requirements
+                        <span className="text-red-500 ml-1">*</span>
+                      </label>
                     </div>
                     <div className="relative group">
                       <textarea
@@ -395,7 +333,6 @@ Security is critical, requiring 2FA for all admin actions.'`;
                           value={srsStandard}
                           onChange={(e) => setSrsStandard(e.target.value)}
                         >
-                          <option>IEEE 830-1998</option>
                           <option>ISO/IEC/IEEE 29148:2018</option>
                         </select>
                       </div>
@@ -416,16 +353,16 @@ Security is critical, requiring 2FA for all admin actions.'`;
                 </div>
               )}
 
-              <div className="mt-6 lg:mt-8 pt-4 lg:pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-                <button
-                  onClick={handleSaveDraft}
-                  disabled={isGenerating}
-                  className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 font-medium text-sm px-4 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed order-2 sm:order-1"
-                >
-                  Save as Draft
-                </button>
+              <div className="mt-6 lg:mt-8 pt-4 lg:pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-4">
+                {/*<button*/}
+                {/*  onClick={handleSaveDraft}*/}
+                {/*  disabled={isGenerating}*/}
+                {/*  className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 font-medium text-sm px-4 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed order-2 sm:order-1"*/}
+                {/*>*/}
+                {/*  Save as Draft*/}
+                {/*</button>*/}
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 lg:gap-4 order-1 sm:order-2">
-                  <span className="text-xs text-slate-400 text-center sm:text-left">{isGenerating ? 'Generating...' : 'Estimated processing time: ~45s'}</span>
+                  <span className="text-xs text-slate-400 text-center sm:text-left">{isGenerating ? 'Generating...' : ''}</span>
                   <button
                     onClick={handleGenerate}
                     disabled={isGenerating}

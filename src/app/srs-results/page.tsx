@@ -111,6 +111,132 @@ interface EditableContent {
   business_rules?: string[];
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+}
+
+function toText(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) return value.map(v => toText(v)).filter(Boolean).join('\n');
+  if (value && typeof value === 'object') {
+    const rec = value as Record<string, unknown>;
+    const named = [rec.id, rec.name, rec.description]
+      .map(v => (typeof v === 'string' ? v.trim() : ''))
+      .filter(Boolean);
+    if (named.length) return named.join(' - ');
+    return Object.values(rec).map(v => toText(v)).filter(Boolean).join('\n');
+  }
+  return '';
+}
+
+function toList(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map(v => toText(v)).filter(Boolean);
+  const one = toText(value);
+  return one ? [one] : [];
+}
+
+function normalizeGeneratedContent(content: unknown, prev: EditableContent): EditableContent {
+  const data = asRecord(content);
+  const intro = asRecord(data.introduction);
+  const overall = asRecord(data.overallDescription);
+  const external = asRecord(data.externalInterfaceRequirements);
+  const docControl = asRecord(data.documentControl);
+
+  const systemUseCases = Array.isArray(data.systemUseCases)
+    ? data.systemUseCases.map((item, idx) => {
+        const uc = asRecord(item);
+        return {
+          name: toText(uc.name) || `Use Case ${idx + 1}`,
+          identifier: toText(uc.identifier) || toText(uc.id) || `UC-${String(idx + 1).padStart(3, '0')}`,
+          description: toText(uc.description),
+          actors: toList(uc.actors),
+          preconditions: Array.isArray(uc.preconditions) ? toList(uc.preconditions).join('\n') : toText(uc.preconditions),
+          mainFlow: toList(uc.mainFlow),
+          alternativeFlow: toList(uc.alternativeFlow ?? uc.alternativeFlows)
+        };
+      })
+    : [];
+
+  const functionalRequirements = Array.isArray(data.functionalRequirements)
+    ? data.functionalRequirements.map((item, idx) => {
+        const fr = asRecord(item);
+        const statement = toText(fr.statement);
+        return {
+          id: toText(fr.id) || `FR-${String(idx + 1).padStart(3, '0')}`,
+          title: toText(fr.title) || statement || `Functional Requirement ${idx + 1}`,
+          description: toText(fr.description) || statement,
+          priority: toText(fr.priority) || 'Medium'
+        };
+      })
+    : [];
+
+  const nonFunctionalRequirements = Array.isArray(data.nonFunctionalRequirements)
+    ? data.nonFunctionalRequirements.map((item, idx) => {
+        const nfr = asRecord(item);
+        const statement = toText(nfr.statement);
+        return {
+          id: toText(nfr.id) || `NFR-${String(idx + 1).padStart(3, '0')}`,
+          category: toText(nfr.category) || 'Reliability',
+          description: toText(nfr.description) || statement,
+          priority: toText(nfr.priority) || 'Medium'
+        };
+      })
+    : [];
+
+  return {
+    ...prev,
+    ...data,
+    title: toText(data.title) || toText(docControl.title) || prev.title,
+    introduction: {
+      purpose: toText(intro.purpose) || toText(data.introduction_purpose) || prev.introduction?.purpose || '',
+      scope: toText(intro.scope) || toText(data.introduction_scope) || prev.introduction?.scope || '',
+      definitions: toList(intro.definitions ?? intro.definitionsAcronymsAndAbbreviations ?? prev.introduction?.definitions ?? []),
+      references: toList(intro.references ?? data.introduction_references ?? prev.introduction?.references ?? [])
+    },
+    overallDescription: {
+      ...prev.overallDescription,
+      ...overall,
+      // Keep object entries for richer display; section component normalizes safely.
+      userClassesAndCharacteristics: (Array.isArray(overall.userClassesAndCharacteristics)
+        ? (overall.userClassesAndCharacteristics as any[])
+        : toList(overall.userCharacteristics)) as any,
+      operatingEnvironment: toText(overall.operatingEnvironment),
+      designAndImplementationConstraints: toList(overall.designAndImplementationConstraints ?? overall.constraints),
+      assumptionsAndDependencies: toList(overall.assumptionsAndDependencies ?? overall.assumptions),
+      productPerspective: toText(overall.productPerspective) || toText(data.product_perspective) || prev.overallDescription?.productPerspective || '',
+      productFunctions: toList(overall.productFunctions ?? data.product_functions ?? prev.overallDescription?.productFunctions ?? []),
+      userCharacteristics: toList(overall.userCharacteristics ?? prev.overallDescription?.userCharacteristics ?? []),
+      constraints: toList(overall.constraints ?? data.constraints ?? prev.overallDescription?.constraints ?? []),
+      assumptions: toList(overall.assumptions ?? prev.overallDescription?.assumptions ?? [])
+    },
+    externalInterfaceRequirements: {
+      userInterfaces: toText(external.userInterfaces ?? data.user_interfaces ?? ''),
+      hardwareInterfaces: toText(external.hardwareInterfaces ?? data.hardware_interfaces ?? ''),
+      softwareInterfaces: toList(external.softwareInterfaces ?? data.software_interfaces ?? []),
+      communicationInterfaces: toText(external.communicationInterfaces ?? data.communication_interfaces ?? '')
+    },
+    systemUseCases,
+    functionalRequirements,
+    nonFunctionalRequirements,
+    otherRequirements: typeof data.otherRequirements === 'string' ? data.otherRequirements : toText(data.otherRequirements),
+    systemRequirementsChart: typeof data.systemRequirementsChart === 'string' ? data.systemRequirementsChart : toText(data.systemRequirementsChart),
+    // Legacy mirrors
+    introduction_purpose: toText(intro.purpose ?? data.introduction_purpose ?? prev.introduction_purpose ?? ''),
+    introduction_scope: toText(intro.scope ?? data.introduction_scope ?? prev.introduction_scope ?? ''),
+    introduction_references: toList(intro.references ?? intro.definitions ?? data.introduction_references ?? prev.introduction_references ?? []),
+    product_perspective: toText(overall.productPerspective ?? data.product_perspective ?? prev.product_perspective ?? ''),
+    product_functions: toList(overall.productFunctions ?? data.product_functions ?? prev.product_functions ?? []),
+    user_characteristics: toList(overall.userCharacteristics ?? data.user_characteristics ?? []).join(', ') || prev.user_characteristics || '',
+    constraints: toList(overall.constraints ?? data.constraints ?? prev.constraints ?? []),
+    assumptions_dependencies: toList(overall.assumptions ?? data.assumptions_dependencies ?? prev.assumptions_dependencies ?? []).join(', '),
+    user_interfaces: toText(external.userInterfaces ?? data.user_interfaces ?? prev.user_interfaces ?? ''),
+    hardware_interfaces: toText(external.hardwareInterfaces ?? data.hardware_interfaces ?? prev.hardware_interfaces ?? ''),
+    software_interfaces: toList(external.softwareInterfaces ?? data.software_interfaces ?? prev.software_interfaces ?? []),
+    communication_interfaces: toText(external.communicationInterfaces ?? data.communication_interfaces ?? prev.communication_interfaces ?? '')
+  };
+}
+
 export default function SRSResultsPage() {
   const router = useRouter();
   const [formData, setFormData] = useState<FormData | null>(null);
@@ -202,134 +328,9 @@ export default function SRSResultsPage() {
         const parsedData = JSON.parse(generatedData);
         setFormData(parsedData);
 
-        // If we have generated content from the API, use it
+        // If we have generated content from the API, normalize and use it
         if (parsedData.generatedContent) {
-          const content = parsedData.generatedContent;
-
-          // Check if it's the new API format with title, introduction, overallDescription, etc.
-          if (content.title && content.introduction && content.overallDescription) {
-            // New API format - merge with defaults to ensure all fields exist
-            setEditableContent(prev => ({
-              ...prev,
-              ...content,
-              // Ensure critical arrays exist even if empty
-              functionalRequirements: content.functionalRequirements || [],
-              nonFunctionalRequirements: content.nonFunctionalRequirements || [],
-              systemUseCases: content.systemUseCases || [],
-              introduction: {
-                purpose: content.introduction?.purpose || '',
-                references: content.introduction?.references || [],
-                scope: content.introduction?.scope,
-                definitions: content.introduction?.definitions
-              },
-              overallDescription: {
-                ...content.overallDescription
-              },
-              externalInterfaceRequirements: content.externalInterfaceRequirements || {
-                userInterfaces: '',
-                hardwareInterfaces: '',
-                softwareInterfaces: [],
-                communicationInterfaces: ''
-              },
-              otherNonfunctionalRequirements: content.otherNonfunctionalRequirements || {
-                performanceRequirements: [],
-                safetyRequirements: [],
-                securityRequirements: [],
-                softwareQualityAttributes: []
-              }
-            }));
-          } else if (content.title && content.introduction?.purpose) {
-            // Also new format - merge with defaults
-            setEditableContent(prev => ({
-              ...prev,
-              ...content,
-              // Ensure critical arrays exist even if empty
-              functionalRequirements: content.functionalRequirements || [],
-              nonFunctionalRequirements: content.nonFunctionalRequirements || [],
-              systemUseCases: content.systemUseCases || [],
-              introduction: {
-                purpose: content.introduction?.purpose || '',
-                references: content.introduction?.references || [],
-                scope: content.introduction?.scope,
-                definitions: content.introduction?.definitions
-              },
-              overallDescription: {
-                ...prev.overallDescription,
-                ...content.overallDescription
-              },
-              externalInterfaceRequirements: content.externalInterfaceRequirements || {
-                userInterfaces: '',
-                hardwareInterfaces: '',
-                softwareInterfaces: [],
-                communicationInterfaces: ''
-              },
-              otherNonfunctionalRequirements: content.otherNonfunctionalRequirements || {
-                performanceRequirements: [],
-                safetyRequirements: [],
-                securityRequirements: [],
-                softwareQualityAttributes: []
-              }
-            }));
-          } else {
-            // Legacy format - map to new structure
-            setEditableContent(prev => ({
-              ...prev,
-              title: content.title || prev.title,
-              introduction: {
-                purpose: content.introduction?.purpose || content.introduction_purpose || prev.introduction?.purpose || '',
-                references: content.introduction?.references || content.introduction?.definitions || content.introduction_references || prev.introduction?.references || [],
-                scope: content.introduction?.scope || content.introduction_scope || prev.introduction?.scope || '',
-                definitions: content.introduction?.definitions || prev.introduction?.definitions || []
-              },
-              overallDescription: {
-                userClassesAndCharacteristics: content.overallDescription?.userClassesAndCharacteristics || (Array.isArray(content.overallDescription?.userCharacteristics) ? content.overallDescription.userCharacteristics : [content.overallDescription?.userCharacteristics || '']),
-                operatingEnvironment: content.overallDescription?.operatingEnvironment || '',
-                designAndImplementationConstraints: content.overallDescription?.designAndImplementationConstraints || content.overallDescription?.constraints || [],
-                assumptionsAndDependencies: content.overallDescription?.assumptionsAndDependencies || (Array.isArray(content.overallDescription?.assumptions) ? content.overallDescription.assumptions : []),
-                // Also set legacy fields
-                productPerspective: content.overallDescription?.productPerspective || content.product_perspective || prev.overallDescription?.productPerspective || '',
-                productFunctions: content.overallDescription?.productFunctions || content.product_functions || prev.overallDescription?.productFunctions || [],
-                userCharacteristics: content.overallDescription?.userCharacteristics || [],
-                constraints: content.overallDescription?.constraints || prev.overallDescription?.constraints || [],
-                assumptions: content.overallDescription?.assumptions || prev.overallDescription?.assumptions || []
-              },
-              externalInterfaceRequirements: content.externalInterfaceRequirements || {
-                userInterfaces: content.user_interfaces || '',
-                hardwareInterfaces: content.hardware_interfaces || '',
-                softwareInterfaces: content.software_interfaces || [],
-                communicationInterfaces: content.communication_interfaces || ''
-              },
-              systemUseCases: content.systemUseCases || [],
-              functionalRequirements: content.functionalRequirements || [],
-              nonFunctionalRequirements: content.nonFunctionalRequirements || [],
-              otherNonfunctionalRequirements: content.otherNonfunctionalRequirements || {
-                performanceRequirements: [],
-                safetyRequirements: [],
-                securityRequirements: [],
-                softwareQualityAttributes: []
-              },
-              otherRequirements: content.otherRequirements || '',
-              systemRequirementsChart: content.systemRequirementsChart || '',
-              // Legacy fields
-              introduction_purpose: content.introduction?.purpose || content.introduction_purpose || prev.introduction_purpose || '',
-              introduction_scope: content.introduction?.scope || content.introduction_scope || prev.introduction_scope || '',
-              introduction_product: content.introduction_product || prev.introduction_product || '',
-              introduction_references: content.introduction?.references || content.introduction?.definitions || content.introduction_references || prev.introduction_references || [],
-              product_perspective: content.overallDescription?.productPerspective || content.product_perspective || prev.product_perspective || '',
-              product_functions: content.overallDescription?.productFunctions || content.product_functions || prev.product_functions || [],
-              user_characteristics: content.overallDescription?.userCharacteristics && Array.isArray(content.overallDescription.userCharacteristics)
-                ? content.overallDescription.userCharacteristics.join(', ')
-                : content.user_characteristics || prev.user_characteristics || '',
-              constraints: content.overallDescription?.constraints || content.constraints || prev.constraints || [],
-              assumptions_dependencies: content.overallDescription?.assumptions && Array.isArray(content.overallDescription.assumptions)
-                ? content.overallDescription.assumptions.join(', ')
-                : content.assumptions_dependencies || prev.assumptions_dependencies || '',
-              user_interfaces: content.externalInterfaceRequirements?.userInterfaces || content.user_interfaces || prev.user_interfaces || '',
-              hardware_interfaces: content.externalInterfaceRequirements?.hardwareInterfaces || content.hardware_interfaces || prev.hardware_interfaces || '',
-              software_interfaces: content.externalInterfaceRequirements?.softwareInterfaces || content.software_interfaces || prev.software_interfaces || [],
-              communication_interfaces: content.externalInterfaceRequirements?.communicationInterfaces || content.communication_interfaces || prev.communication_interfaces || ''
-            }));
-          }
+          setEditableContent(prev => normalizeGeneratedContent(parsedData.generatedContent, prev));
         } else {
           // No generated content - use template generator to create SRS from form data
           try {
@@ -340,12 +341,13 @@ export default function SRSResultsPage() {
               uploadedFiles: parsedData.uploadedFiles || []
             });
 
-            setEditableContent(generatedSRS as EditableContent);
+            const normalized = normalizeGeneratedContent(generatedSRS, editableContent);
+            setEditableContent(normalized);
 
             // Also save the generated content to localStorage
             const updatedData = {
               ...parsedData,
-              generatedContent: generatedSRS,
+              generatedContent: normalized,
               lastModified: new Date().toISOString()
             };
             localStorage.setItem('srs-generated', JSON.stringify(updatedData));
@@ -932,7 +934,9 @@ export default function SRSResultsPage() {
           onClose={() => setIsChatboxOpen(false)}
           srsContent={editableContent}
           formData={formData || undefined}
-          onSRSUpdate={(updatedContent) => setEditableContent(updatedContent as EditableContent)}
+          onSRSUpdate={(updatedContent) =>
+            setEditableContent(prev => normalizeGeneratedContent(updatedContent, prev))
+          }
         />
       )}
 
