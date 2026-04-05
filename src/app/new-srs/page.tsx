@@ -55,7 +55,8 @@ export default function NewSRSPage() {
 
       console.log('Generating SRS document...', formData);
 
-      let generatedContent = null;
+      let generatedContent: unknown = null;
+      let validationResult: unknown = null;
 
       // Try API first
       try {
@@ -69,8 +70,9 @@ export default function NewSRSPage() {
 
         if (response.ok) {
           const result = await response.json();
-          if (result.success && result.content) {
-            generatedContent = result.content;
+          if (result.success && result.document) {
+            generatedContent = result.document;
+            validationResult = result.validation ?? null;
             console.log('SRS generated from API');
           }
         } else {
@@ -97,6 +99,7 @@ export default function NewSRSPage() {
       const generatedData = {
         ...formData,
         generatedContent: generatedContent,
+        validationResult,
       };
 
       localStorage.setItem('srs-generated', JSON.stringify(generatedData));

@@ -661,8 +661,49 @@ function tryParseJson(candidate: string): unknown | null {
   }
 }
 
+function extractModelText(response: {
+  text: () => string;
+  candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+}): string {
+  let text = response.text();
+
+  if (!text || text.trim().length === 0) {
+    const fallback = response.candidates?.[0]?.content?.parts
+      ?.map((p: { text?: string }) => p.text)
+      .filter(Boolean)
+      .join('');
+
+    if (fallback && fallback.trim().length > 0) {
+      text = fallback;
+    }
+  }
+
+  return text || '';
+}
+
+function buildJsonRepairPrompt(invalidJson: string): string {
+  return `You are a strict JSON repair tool.
+
+TASK:
+Repair the following content into VALID JSON.
+
+RULES:
+- Return JSON only.
+- Do not add markdown, code fences, comments, or explanations.
+- Preserve the original structure and values as much as possible.
+- Fix syntax issues such as trailing commas, missing quotes, invalid escapes, or broken brackets.
+
+CONTENT TO REPAIR:
+${invalidJson}`;
+}
+
 function parseGeminiJsonResponse(rawText: string): unknown {
-  const trimmed = rawText.trim();
+  const trimmed = rawText
+    .trim()
+    .replace(/^\uFEFF/, '')
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
   const fencedMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
   const fencedContent = fencedMatch?.[1]?.trim();
 
@@ -677,6 +718,7 @@ function parseGeminiJsonResponse(rawText: string): unknown {
     .filter((value): value is string => Boolean(value && value.length > 0));
 
   const uniqueCandidates = [...new Set(candidates)];
+  const parseErrors: string[] = [];
 
   for (const candidate of uniqueCandidates) {
     const direct = tryParseJson(candidate);
@@ -690,9 +732,13 @@ function parseGeminiJsonResponse(rawText: string): unknown {
     if (repaired !== null) {
       return repaired;
     }
+
+    parseErrors.push(`candidate length ${candidate.length}`);
   }
 
-  throw new Error('Model returned invalid JSON that could not be parsed.');
+  throw new Error(
+    `Model returned invalid JSON that could not be parsed. Tried ${uniqueCandidates.length} candidate(s). ${parseErrors.join('; ')}`
+  );
 }
 
 export async function POST(request: NextRequest) {
@@ -726,18 +772,10 @@ export async function POST(request: NextRequest) {
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    let text = response.text();
-
-    // Fallback: some Gemini responses may leave text() empty but include candidates
-    if (!text || text.trim().length === 0) {
-      const fallback = response.candidates?.[0]?.content?.parts
-        ?.map((p: { text?: string }) => p.text)
-        .filter(Boolean)
-        .join('');
-      if (fallback && fallback.trim().length > 0) {
-        text = fallback;
-      }
-    }
+    const text = extractModelText(response as {
+      text: () => string;
+      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+    });
 
     if (!text || text.trim().length === 0) {
       return NextResponse.json(
@@ -746,7 +784,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const parsedDocument = parseGeminiJsonResponse(text);
+    let parsedDocument: unknown;
+    try {
+      parsedDocument = parseGeminiJsonResponse(text);
+    } catch (firstParseError) {
+      console.warn('Initial JSON parse failed, attempting one repair pass.');
+
+      const repairPrompt = buildJsonRepairPrompt(text);
+      const repairResult = await model.generateContent(repairPrompt);
+      const repairResponse = await repairResult.response;
+      const repairedText = extractModelText(repairResponse as {
+        text: () => string;
+        candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+      });
+
+      if (!repairedText || repairedText.trim().length === 0) {
+        throw firstParseError;
+      }
+
+      parsedDocument = parseGeminiJsonResponse(repairedText);
+    }
+
     if (!parsedDocument || typeof parsedDocument !== 'object' || Array.isArray(parsedDocument)) {
       return NextResponse.json(
         { success: false, error: 'Model returned JSON that is not an object.' },
@@ -761,7 +819,7 @@ export async function POST(request: NextRequest) {
     console.error('Error generating SRS:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to generate SRS document';
     return NextResponse.json(
-      { success: false, error: errorMessage },
+      { success: false, error: errorMessage, code: 'SRS_GENERATION_JSON_PARSE_ERROR' },
       { status: 500 }
     );
   }

@@ -21,12 +21,14 @@ import OtherNonfunctionalRequirementsSection from '@/components/srs/sections/Oth
 import AppendicesSection from '@/components/srs/sections/AppendicesSection';
 import { exportSRSToDocx } from '@/lib/docxExport';
 import { generateSRSFromTemplate } from '@/lib/srsTemplateGenerator';
+import type { ValidationIssue, ValidationResult } from '@/lib/srsValidator';
 
 interface FormData {
   projectName: string;
   projectVision: string;
   srsStandard: string;
   uploadedFiles: string[];
+  validationResult?: ValidationResult;
 }
 
 interface EditableContent {
@@ -136,30 +138,101 @@ function toList(value: unknown): string[] {
   return one ? [one] : [];
 }
 
+function flattenNfrGroups(value: unknown): Array<Record<string, unknown>> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
+
+  const grouped = value as Record<string, unknown>;
+  const output: Array<Record<string, unknown>> = [];
+
+  Object.entries(grouped).forEach(([groupName, groupValue]) => {
+    if (!Array.isArray(groupValue)) return;
+
+    groupValue.forEach((entry) => {
+      const item = asRecord(entry);
+      output.push({
+        ...item,
+        category: toText(item.category) || groupName
+      });
+    });
+  });
+
+  return output;
+}
+
+function normalizeValidationResult(value: unknown): ValidationResult | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+
+  const data = value as Record<string, unknown>;
+  const issues = Array.isArray(data.issues)
+    ? data.issues.filter((issue): issue is ValidationIssue => {
+        if (!issue || typeof issue !== 'object' || Array.isArray(issue)) return false;
+        const record = issue as Record<string, unknown>;
+        return record.severity === 'error' || record.severity === 'warning';
+      })
+    : [];
+
+  const errorCount = typeof data.errorCount === 'number'
+    ? data.errorCount
+    : issues.filter(issue => issue.severity === 'error').length;
+  const warningCount = typeof data.warningCount === 'number'
+    ? data.warningCount
+    : issues.filter(issue => issue.severity === 'warning').length;
+
+  return {
+    passed: typeof data.passed === 'boolean' ? data.passed : errorCount === 0,
+    errorCount,
+    warningCount,
+    qualityScore: typeof data.qualityScore === 'number' ? data.qualityScore : 0,
+    issues
+  };
+}
+
 function normalizeGeneratedContent(content: unknown, prev: EditableContent): EditableContent {
   const data = asRecord(content);
-  const intro = asRecord(data.introduction);
-  const overall = asRecord(data.overallDescription);
-  const external = asRecord(data.externalInterfaceRequirements);
+  const intro = asRecord(data.introduction ?? data['1Introduction']);
+  const context = asRecord(data['2ContextOfTheSystem']);
+  const overall = asRecord(data.overallDescription ?? context);
+  const featureAndUseCase = asRecord(data['3SystemFeaturesAndUseCases']);
+  const external = asRecord(data.externalInterfaceRequirements ?? data['6ExternalInterfaceRequirements']);
   const docControl = asRecord(data.documentControl);
 
-  const systemUseCases = Array.isArray(data.systemUseCases)
-    ? data.systemUseCases.map((item, idx) => {
+  const useCaseSource = Array.isArray(data.systemUseCases)
+    ? data.systemUseCases
+    : Array.isArray(featureAndUseCase['3.2UseCases'])
+      ? (featureAndUseCase['3.2UseCases'] as unknown[])
+      : [];
+
+  const frSource = Array.isArray(data.functionalRequirements)
+    ? data.functionalRequirements
+    : Array.isArray(data['4FunctionalRequirements'])
+      ? (data['4FunctionalRequirements'] as unknown[])
+      : [];
+
+  const nfrSource = Array.isArray(data.nonFunctionalRequirements)
+    ? data.nonFunctionalRequirements
+    : flattenNfrGroups(data['5NonFunctionalRequirements']);
+
+  const majorFeatures = Array.isArray(featureAndUseCase['3.1MajorSystemFeatures'])
+    ? (featureAndUseCase['3.1MajorSystemFeatures'] as unknown[])
+    : [];
+
+  const systemUseCases = useCaseSource
+    .map((item, idx) => {
         const uc = asRecord(item);
         return {
           name: toText(uc.name) || `Use Case ${idx + 1}`,
           identifier: toText(uc.identifier) || toText(uc.id) || `UC-${String(idx + 1).padStart(3, '0')}`,
-          description: toText(uc.description),
-          actors: toList(uc.actors),
+          description: toText(uc.description) || toText(uc.goal),
+          actors: toList(uc.actors ?? uc.primaryActors),
           preconditions: Array.isArray(uc.preconditions) ? toList(uc.preconditions).join('\n') : toText(uc.preconditions),
           mainFlow: toList(uc.mainFlow),
           alternativeFlow: toList(uc.alternativeFlow ?? uc.alternativeFlows)
         };
       })
-    : [];
+    ;
 
-  const functionalRequirements = Array.isArray(data.functionalRequirements)
-    ? data.functionalRequirements.map((item, idx) => {
+  const functionalRequirements = frSource
+    .map((item, idx) => {
         const fr = asRecord(item);
         const statement = toText(fr.statement);
         return {
@@ -169,10 +242,10 @@ function normalizeGeneratedContent(content: unknown, prev: EditableContent): Edi
           priority: toText(fr.priority) || 'Medium'
         };
       })
-    : [];
+    ;
 
-  const nonFunctionalRequirements = Array.isArray(data.nonFunctionalRequirements)
-    ? data.nonFunctionalRequirements.map((item, idx) => {
+  const nonFunctionalRequirements = nfrSource
+    .map((item, idx) => {
         const nfr = asRecord(item);
         const statement = toText(nfr.statement);
         return {
@@ -182,17 +255,26 @@ function normalizeGeneratedContent(content: unknown, prev: EditableContent): Edi
           priority: toText(nfr.priority) || 'Medium'
         };
       })
-    : [];
+    ;
+
+  const mappedSystemFeatures = majorFeatures.map((item, idx) => {
+    const feature = asRecord(item);
+    return {
+      id: toText(feature.id) || `F${idx + 1}`,
+      description: toText(feature.name) || toText(feature.description) || `System Feature ${idx + 1}`,
+      functional_requirements: [] as string[]
+    };
+  });
 
   return {
     ...prev,
     ...data,
-    title: toText(data.title) || toText(docControl.title) || prev.title,
+    title: toText(data.title) || toText(docControl.documentTitle) || toText(docControl.title) || prev.title,
     introduction: {
-      purpose: toText(intro.purpose) || toText(data.introduction_purpose) || prev.introduction?.purpose || '',
-      scope: toText(intro.scope) || toText(data.introduction_scope) || prev.introduction?.scope || '',
-      definitions: toList(intro.definitions ?? intro.definitionsAcronymsAndAbbreviations ?? prev.introduction?.definitions ?? []),
-      references: toList(intro.references ?? data.introduction_references ?? prev.introduction?.references ?? [])
+      purpose: toText(intro.purpose ?? intro['1.1Purpose']) || toText(data.introduction_purpose) || prev.introduction?.purpose || '',
+      scope: toText(intro.scope ?? intro['1.2Scope']) || toText(data.introduction_scope) || prev.introduction?.scope || '',
+      definitions: toList(intro.definitions ?? intro.definitionsAcronymsAndAbbreviations ?? intro['1.5DefinitionsAcronymsAbbreviations'] ?? prev.introduction?.definitions ?? []),
+      references: toList(intro.references ?? intro['1.6References'] ?? data.introduction_references ?? prev.introduction?.references ?? [])
     },
     overallDescription: {
       ...prev.overallDescription,
@@ -200,10 +282,10 @@ function normalizeGeneratedContent(content: unknown, prev: EditableContent): Edi
       // Keep object entries for richer display; section component normalizes safely.
       userClassesAndCharacteristics: (Array.isArray(overall.userClassesAndCharacteristics)
         ? (overall.userClassesAndCharacteristics as any[])
-        : toList(overall.userCharacteristics)) as any,
-      operatingEnvironment: toText(overall.operatingEnvironment),
-      designAndImplementationConstraints: toList(overall.designAndImplementationConstraints ?? overall.constraints),
-      assumptionsAndDependencies: toList(overall.assumptionsAndDependencies ?? overall.assumptions),
+        : toList(overall.userCharacteristics ?? context['2.4UserClasses'])) as any,
+      operatingEnvironment: toText(overall.operatingEnvironment ?? context['2.5OperatingEnvironment']),
+      designAndImplementationConstraints: toList(overall.designAndImplementationConstraints ?? overall.constraints ?? context['2.7Constraints']),
+      assumptionsAndDependencies: toList(overall.assumptionsAndDependencies ?? overall.assumptions ?? context['2.6AssumptionsDependencies']),
       productPerspective: toText(overall.productPerspective) || toText(data.product_perspective) || prev.overallDescription?.productPerspective || '',
       productFunctions: toList(overall.productFunctions ?? data.product_functions ?? prev.overallDescription?.productFunctions ?? []),
       userCharacteristics: toList(overall.userCharacteristics ?? prev.overallDescription?.userCharacteristics ?? []),
@@ -211,20 +293,21 @@ function normalizeGeneratedContent(content: unknown, prev: EditableContent): Edi
       assumptions: toList(overall.assumptions ?? prev.overallDescription?.assumptions ?? [])
     },
     externalInterfaceRequirements: {
-      userInterfaces: toText(external.userInterfaces ?? data.user_interfaces ?? ''),
-      hardwareInterfaces: toText(external.hardwareInterfaces ?? data.hardware_interfaces ?? ''),
-      softwareInterfaces: toList(external.softwareInterfaces ?? data.software_interfaces ?? []),
-      communicationInterfaces: toText(external.communicationInterfaces ?? data.communication_interfaces ?? '')
+      userInterfaces: toText(external.userInterfaces ?? external['6.1UserInterfaces'] ?? data.user_interfaces ?? ''),
+      hardwareInterfaces: toText(external.hardwareInterfaces ?? external['6.2HardwareInterfaces'] ?? data.hardware_interfaces ?? ''),
+      softwareInterfaces: toList(external.softwareInterfaces ?? external['6.3SoftwareInterfaces'] ?? data.software_interfaces ?? []),
+      communicationInterfaces: toText(external.communicationInterfaces ?? external['6.4CommunicationInterfaces'] ?? data.communication_interfaces ?? '')
     },
     systemUseCases,
     functionalRequirements,
     nonFunctionalRequirements,
+    system_features: mappedSystemFeatures.length > 0 ? mappedSystemFeatures : prev.system_features,
     otherRequirements: typeof data.otherRequirements === 'string' ? data.otherRequirements : toText(data.otherRequirements),
     systemRequirementsChart: typeof data.systemRequirementsChart === 'string' ? data.systemRequirementsChart : toText(data.systemRequirementsChart),
     // Legacy mirrors
-    introduction_purpose: toText(intro.purpose ?? data.introduction_purpose ?? prev.introduction_purpose ?? ''),
-    introduction_scope: toText(intro.scope ?? data.introduction_scope ?? prev.introduction_scope ?? ''),
-    introduction_references: toList(intro.references ?? intro.definitions ?? data.introduction_references ?? prev.introduction_references ?? []),
+    introduction_purpose: toText(intro.purpose ?? intro['1.1Purpose'] ?? data.introduction_purpose ?? prev.introduction_purpose ?? ''),
+    introduction_scope: toText(intro.scope ?? intro['1.2Scope'] ?? data.introduction_scope ?? prev.introduction_scope ?? ''),
+    introduction_references: toList(intro.references ?? intro['1.6References'] ?? intro.definitions ?? data.introduction_references ?? prev.introduction_references ?? []),
     product_perspective: toText(overall.productPerspective ?? data.product_perspective ?? prev.product_perspective ?? ''),
     product_functions: toList(overall.productFunctions ?? data.product_functions ?? prev.product_functions ?? []),
     user_characteristics: toList(overall.userCharacteristics ?? data.user_characteristics ?? []).join(', ') || prev.user_characteristics || '',
@@ -247,6 +330,7 @@ export default function SRSResultsPage() {
   const [isChatboxOpen, setIsChatboxOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [exportStatus, setExportStatus] = useState<'idle' | 'exporting' | 'done'>('idle');
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [editableContent, setEditableContent] = useState<EditableContent>({
     title: '',
     introduction: {
@@ -327,6 +411,7 @@ export default function SRSResultsPage() {
       if (generatedData) {
         const parsedData = JSON.parse(generatedData);
         setFormData(parsedData);
+        setValidationResult(normalizeValidationResult(parsedData.validationResult ?? parsedData.validation));
 
         // If we have generated content from the API, normalize and use it
         if (parsedData.generatedContent) {
@@ -348,6 +433,7 @@ export default function SRSResultsPage() {
             const updatedData = {
               ...parsedData,
               generatedContent: normalized,
+              validationResult,
               lastModified: new Date().toISOString()
             };
             localStorage.setItem('srs-generated', JSON.stringify(updatedData));
@@ -373,6 +459,7 @@ export default function SRSResultsPage() {
         const updatedData = {
           ...formData,
           generatedContent: editableContent,
+          validationResult,
           lastModified: new Date().toISOString()
         };
         localStorage.setItem('srs-generated', JSON.stringify(updatedData));
@@ -380,7 +467,7 @@ export default function SRSResultsPage() {
         console.error('Failed to save SRS data to localStorage:', error);
       }
     }
-  }, [editableContent, formData, loading]);
+  }, [editableContent, formData, loading, validationResult]);
 
   const handleSaveDraft = async () => {
     try {
@@ -392,6 +479,7 @@ export default function SRSResultsPage() {
       const updatedData = {
         ...formData,
         generatedContent: editableContent,
+        validationResult,
         lastModified: new Date().toISOString(),
         savedAt: new Date().toISOString()
       };
@@ -527,6 +615,50 @@ export default function SRSResultsPage() {
               isEditing={isEditing}
               onEditToggle={() => setIsEditing(!isEditing)}
             />
+
+            {validationResult && (
+              <div className="bg-white dark:bg-[#1a1d2d] rounded-xl border border-[#e7e9f3] dark:border-[#2a2e3b] shadow-sm p-4 lg:p-6">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-white">SRS Validation Result</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      {validationResult.passed ? 'Passed with no blocking errors.' : 'Needs fixes before finalizing.'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className={`px-2 py-1 rounded-full font-medium ${validationResult.passed ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'}`}>
+                      {validationResult.passed ? 'Passed' : 'Failed'}
+                    </span>
+                    <span className="px-2 py-1 rounded-full bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">Score: {validationResult.qualityScore}/100</span>
+                    <span className="px-2 py-1 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">Errors: {validationResult.errorCount}</span>
+                    <span className="px-2 py-1 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">Warnings: {validationResult.warningCount}</span>
+                  </div>
+                </div>
+
+                {validationResult.issues.length > 0 && (
+                // {true && (
+                  <div className="mt-4 space-y-2 max-h-64 overflow-auto pr-1">
+                    {validationResult.issues.map((issue, index) => (
+                      <div key={`${issue.code}-${issue.requirementId || 'na'}-${index}`} className="rounded-lg border border-slate-200 dark:border-slate-700 p-3">
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className={`px-2 py-0.5 rounded-full font-medium ${issue.severity === 'error' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'}`}>
+                            {issue.severity}
+                          </span>
+                          <span className="font-mono text-slate-500 dark:text-slate-400">{issue.code}</span>
+                          {issue.requirementId && (
+                            <span className="text-slate-500 dark:text-slate-400">{issue.requirementId}</span>
+                          )}
+                        </div>
+                        <p className="text-sm text-slate-800 dark:text-slate-200 mt-2">{issue.message}</p>
+                        {issue.suggestion && (
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Suggestion: {issue.suggestion}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Main Content Box */}
             <div className="bg-white dark:bg-[#1a1d2d] rounded-xl border border-[#e7e9f3] dark:border-[#2a2e3b] shadow-sm p-3 lg:p-8 overflow-x-hidden">
