@@ -72,13 +72,42 @@ interface EditableContent {
     title: string;
     description: string;
     priority: string;
+    rationale?: string;
+    source?: string[];
+    fitCriterion?: string;
+    verificationMethod?: string;
   }>;
   nonFunctionalRequirements?: Array<{
     id: string;
     category: string;
     description: string;
     priority: string;
+    source?: string[];
+    fitCriterion?: string;
+    verificationMethod?: string;
   }>;
+  dataRequirements?: {
+    logicalDataModel?: string;
+    dataEntities?: string[];
+    dataRetention?: string[];
+    dataValidationRules?: string[];
+  };
+  verificationAndAcceptance?: {
+    acceptanceCriteria?: string[];
+    verificationMapping?: string[];
+  };
+  traceability?: {
+    stakeholderToRequirements?: string[];
+    useCaseToRequirements?: string[];
+    requirementDependencies?: string[];
+  };
+  qualityCheckSummary?: {
+    completenessNotes?: string[];
+    ambiguityRisks?: string[];
+    consistencyRisks?: string[];
+    missingTraceLinks?: string[];
+    assumptionsMade?: string[];
+  };
   otherNonfunctionalRequirements?: {
     performanceRequirements?: string[];
     safetyRequirements?: string[];
@@ -178,6 +207,10 @@ function normalizeValidationResult(value: unknown): ValidationResult | null {
     ? data.warningCount
     : issues.filter(issue => issue.severity === 'warning').length;
 
+  if (issues.length > 0) {
+    console.log('[SRS Validation] Issues:', issues);
+  }
+
   return {
     passed: typeof data.passed === 'boolean' ? data.passed : errorCount === 0,
     errorCount,
@@ -194,6 +227,10 @@ function normalizeGeneratedContent(content: unknown, prev: EditableContent): Edi
   const overall = asRecord(data.overallDescription ?? context);
   const featureAndUseCase = asRecord(data['3SystemFeaturesAndUseCases']);
   const external = asRecord(data.externalInterfaceRequirements ?? data['6ExternalInterfaceRequirements']);
+  const dataRequirements = asRecord(data['7DataRequirements']);
+  const verificationAndAcceptance = asRecord(data['9VerificationAndAcceptance']);
+  const traceability = asRecord(data['10Traceability']);
+  const qualityCheckSummary = asRecord(data.qualityCheckSummary ?? data['12QualityCheckSummary']);
   const docControl = asRecord(data.documentControl);
 
   const useCaseSource = Array.isArray(data.systemUseCases)
@@ -239,7 +276,11 @@ function normalizeGeneratedContent(content: unknown, prev: EditableContent): Edi
           id: toText(fr.id) || `FR-${String(idx + 1).padStart(3, '0')}`,
           title: toText(fr.title) || statement || `Functional Requirement ${idx + 1}`,
           description: toText(fr.description) || statement,
-          priority: toText(fr.priority) || 'Medium'
+          priority: toText(fr.priority) || 'Medium',
+          rationale: toText(fr.rationale),
+          source: toList(fr.source),
+          fitCriterion: toText(fr.fitCriterion),
+          verificationMethod: toText(fr.verificationMethod)
         };
       })
     ;
@@ -252,7 +293,10 @@ function normalizeGeneratedContent(content: unknown, prev: EditableContent): Edi
           id: toText(nfr.id) || `NFR-${String(idx + 1).padStart(3, '0')}`,
           category: toText(nfr.category) || 'Reliability',
           description: toText(nfr.description) || statement,
-          priority: toText(nfr.priority) || 'Medium'
+          priority: toText(nfr.priority) || 'Medium',
+          source: toList(nfr.source),
+          fitCriterion: toText(nfr.fitCriterion),
+          verificationMethod: toText(nfr.verificationMethod)
         };
       })
     ;
@@ -284,7 +328,12 @@ function normalizeGeneratedContent(content: unknown, prev: EditableContent): Edi
         ? (overall.userClassesAndCharacteristics as any[])
         : toList(overall.userCharacteristics ?? context['2.4UserClasses'])) as any,
       operatingEnvironment: toText(overall.operatingEnvironment ?? context['2.5OperatingEnvironment']),
-      designAndImplementationConstraints: toList(overall.designAndImplementationConstraints ?? overall.constraints ?? context['2.7Constraints']),
+      designAndImplementationConstraints: toList(
+        overall.designAndImplementationConstraints
+        ?? overall.constraints
+        ?? context['2.7Constraints']
+        ?? data['8DesignAndImplementationConstraints']
+      ),
       assumptionsAndDependencies: toList(overall.assumptionsAndDependencies ?? overall.assumptions ?? context['2.6AssumptionsDependencies']),
       productPerspective: toText(overall.productPerspective) || toText(data.product_perspective) || prev.overallDescription?.productPerspective || '',
       productFunctions: toList(overall.productFunctions ?? data.product_functions ?? prev.overallDescription?.productFunctions ?? []),
@@ -301,6 +350,28 @@ function normalizeGeneratedContent(content: unknown, prev: EditableContent): Edi
     systemUseCases,
     functionalRequirements,
     nonFunctionalRequirements,
+    dataRequirements: {
+      logicalDataModel: toText(dataRequirements['7.1LogicalDataModel']),
+      dataEntities: toList(dataRequirements['7.2DataEntities']),
+      dataRetention: toList(dataRequirements['7.3DataRetention']),
+      dataValidationRules: toList(dataRequirements['7.4DataValidationRules'])
+    },
+    verificationAndAcceptance: {
+      acceptanceCriteria: toList(verificationAndAcceptance['9.1AcceptanceCriteria']),
+      verificationMapping: toList(verificationAndAcceptance['9.2VerificationMapping'])
+    },
+    traceability: {
+      stakeholderToRequirements: toList(traceability.stakeholderToRequirements),
+      useCaseToRequirements: toList(traceability.useCaseToRequirements),
+      requirementDependencies: toList(traceability.requirementDependencies)
+    },
+    qualityCheckSummary: {
+      completenessNotes: toList(qualityCheckSummary.completenessNotes),
+      ambiguityRisks: toList(qualityCheckSummary.ambiguityRisks),
+      consistencyRisks: toList(qualityCheckSummary.consistencyRisks),
+      missingTraceLinks: toList(qualityCheckSummary.missingTraceLinks),
+      assumptionsMade: toList(qualityCheckSummary.assumptionsMade)
+    },
     system_features: mappedSystemFeatures.length > 0 ? mappedSystemFeatures : prev.system_features,
     otherRequirements: typeof data.otherRequirements === 'string' ? data.otherRequirements : toText(data.otherRequirements),
     systemRequirementsChart: typeof data.systemRequirementsChart === 'string' ? data.systemRequirementsChart : toText(data.systemRequirementsChart),
@@ -875,6 +946,132 @@ export default function SRSResultsPage() {
                       });
                     }}
                   />
+
+                  {((editableContent.dataRequirements?.logicalDataModel || '').trim() ||
+                    (editableContent.dataRequirements?.dataEntities?.length || 0) > 0 ||
+                    (editableContent.dataRequirements?.dataRetention?.length || 0) > 0 ||
+                    (editableContent.dataRequirements?.dataValidationRules?.length || 0) > 0) && (
+                    <div className="space-y-3">
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">7. Data Requirements</h3>
+                      {editableContent.dataRequirements?.logicalDataModel && (
+                        <p className="text-sm text-slate-700 dark:text-slate-300">{editableContent.dataRequirements.logicalDataModel}</p>
+                      )}
+                      {(editableContent.dataRequirements?.dataEntities || []).length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Data Entities</p>
+                          <ul className="list-disc ml-5 text-sm text-slate-600 dark:text-slate-400 space-y-1">
+                            {(editableContent.dataRequirements?.dataEntities || []).map((item, idx) => (
+                              <li key={`de-${idx}`}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {(editableContent.dataRequirements?.dataRetention || []).length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Data Retention</p>
+                          <ul className="list-disc ml-5 text-sm text-slate-600 dark:text-slate-400 space-y-1">
+                            {(editableContent.dataRequirements?.dataRetention || []).map((item, idx) => (
+                              <li key={`dr-${idx}`}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {((editableContent.verificationAndAcceptance?.acceptanceCriteria?.length || 0) > 0 ||
+                    (editableContent.verificationAndAcceptance?.verificationMapping?.length || 0) > 0) && (
+                    <div className="space-y-3">
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">9. Verification and Acceptance</h3>
+                      {(editableContent.verificationAndAcceptance?.acceptanceCriteria || []).length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Acceptance Criteria</p>
+                          <ul className="list-disc ml-5 text-sm text-slate-600 dark:text-slate-400 space-y-1">
+                            {(editableContent.verificationAndAcceptance?.acceptanceCriteria || []).map((item, idx) => (
+                              <li key={`ac-${idx}`}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {(editableContent.verificationAndAcceptance?.verificationMapping || []).length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Verification Mapping</p>
+                          <ul className="list-disc ml-5 text-sm text-slate-600 dark:text-slate-400 space-y-1">
+                            {(editableContent.verificationAndAcceptance?.verificationMapping || []).map((item, idx) => (
+                              <li key={`vm-${idx}`}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {((editableContent.traceability?.stakeholderToRequirements?.length || 0) > 0 ||
+                    (editableContent.traceability?.useCaseToRequirements?.length || 0) > 0 ||
+                    (editableContent.traceability?.requirementDependencies?.length || 0) > 0) && (
+                    <div className="space-y-3">
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">10. Traceability</h3>
+                      {(editableContent.traceability?.stakeholderToRequirements || []).length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Stakeholder to Requirements</p>
+                          <ul className="list-disc ml-5 text-sm text-slate-600 dark:text-slate-400 space-y-1">
+                            {(editableContent.traceability?.stakeholderToRequirements || []).map((item, idx) => (
+                              <li key={`tr-s-${idx}`}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {(editableContent.traceability?.useCaseToRequirements || []).length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Use Case to Requirements</p>
+                          <ul className="list-disc ml-5 text-sm text-slate-600 dark:text-slate-400 space-y-1">
+                            {(editableContent.traceability?.useCaseToRequirements || []).map((item, idx) => (
+                              <li key={`tr-u-${idx}`}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {((editableContent.qualityCheckSummary?.completenessNotes?.length || 0) > 0 ||
+                    (editableContent.qualityCheckSummary?.ambiguityRisks?.length || 0) > 0 ||
+                    (editableContent.qualityCheckSummary?.consistencyRisks?.length || 0) > 0 ||
+                    (editableContent.qualityCheckSummary?.assumptionsMade?.length || 0) > 0) && (
+                    <div className="space-y-3">
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">12. Quality Check Summary</h3>
+                      {(editableContent.qualityCheckSummary?.completenessNotes || []).length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Completeness Notes</p>
+                          <ul className="list-disc ml-5 text-sm text-slate-600 dark:text-slate-400 space-y-1">
+                            {(editableContent.qualityCheckSummary?.completenessNotes || []).map((item, idx) => (
+                              <li key={`qc-c-${idx}`}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {(editableContent.qualityCheckSummary?.ambiguityRisks || []).length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Ambiguity Risks</p>
+                          <ul className="list-disc ml-5 text-sm text-slate-600 dark:text-slate-400 space-y-1">
+                            {(editableContent.qualityCheckSummary?.ambiguityRisks || []).map((item, idx) => (
+                              <li key={`qc-a-${idx}`}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {(editableContent.qualityCheckSummary?.consistencyRisks || []).length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Consistency Risks</p>
+                          <ul className="list-disc ml-5 text-sm text-slate-600 dark:text-slate-400 space-y-1">
+                            {(editableContent.qualityCheckSummary?.consistencyRisks || []).map((item, idx) => (
+                              <li key={`qc-r-${idx}`}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {editableContent.systemUseCases && editableContent.systemUseCases.length > 0 && (
                     <SystemUseCasesSection
