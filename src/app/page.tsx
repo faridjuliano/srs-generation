@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 interface RecentProject {
   id: string;
@@ -11,25 +11,24 @@ interface RecentProject {
 }
 
 export default function Home() {
-  const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
-
-  // Load recent projects from localStorage
-  useEffect(() => {
+  const [recentProjects] = useState<RecentProject[]>(() => {
     try {
+      if (typeof window === 'undefined') return [];
       const stored = localStorage.getItem('srs-recent-projects');
       if (stored) {
         const projects = JSON.parse(stored) as RecentProject[];
         // Add mock status for display
-        const projectsWithStatus = projects.map((p, idx) => ({
+        const projectsWithStatus: RecentProject[] = projects.map((p, idx) => ({
           ...p,
           status: idx % 2 === 0 ? 'Completed' : 'In Progress'
         }));
-        setRecentProjects(projectsWithStatus.slice(0, 3));
+        return projectsWithStatus.slice(0, 3);
       }
     } catch (error) {
       console.error('Failed to load recent projects:', error);
     }
-  }, []);
+    return [];
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

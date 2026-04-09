@@ -477,7 +477,7 @@ export default function SRSResultsPage() {
   useEffect(() => {
     try {
       // Load generated data from localStorage
-      const generatedData = localStorage.getItem('srs-generated');
+      const generatedData = sessionStorage.getItem('srs-generated');
 
       if (generatedData) {
         const parsedData = JSON.parse(generatedData);
@@ -507,7 +507,7 @@ export default function SRSResultsPage() {
               validationResult,
               lastModified: new Date().toISOString()
             };
-            localStorage.setItem('srs-generated', JSON.stringify(updatedData));
+            sessionStorage.setItem('srs-generated', JSON.stringify(updatedData));
           } catch (templateError) {
             console.error('Failed to generate SRS from template:', templateError);
             // Fall back to default template content
@@ -533,7 +533,7 @@ export default function SRSResultsPage() {
           validationResult,
           lastModified: new Date().toISOString()
         };
-        localStorage.setItem('srs-generated', JSON.stringify(updatedData));
+        sessionStorage.setItem('srs-generated', JSON.stringify(updatedData));
       } catch (error) {
         console.error('Failed to save SRS data to localStorage:', error);
       }
@@ -555,18 +555,18 @@ export default function SRSResultsPage() {
         savedAt: new Date().toISOString()
       };
 
-      localStorage.setItem('srs-generated', JSON.stringify(updatedData));
-      localStorage.setItem('srs-draft', JSON.stringify(updatedData));
+      sessionStorage.setItem('srs-generated', JSON.stringify(updatedData));
+      sessionStorage.setItem('srs-draft', JSON.stringify(updatedData));
 
       // Update recent projects with latest save time
       try {
-        const stored = localStorage.getItem('srs-recent-projects');
+        const stored = sessionStorage.getItem('srs-recent-projects');
         const projects = stored ? JSON.parse(stored) : [];
 
         const projectIndex = projects.findIndex((p: any) => p.projectName === formData?.projectName);
         if (projectIndex > -1) {
           projects[projectIndex].savedAt = new Date().toISOString();
-          localStorage.setItem('srs-recent-projects', JSON.stringify(projects));
+          sessionStorage.setItem('srs-recent-projects', JSON.stringify(projects));
         }
       } catch (error) {
         console.error('Failed to update recent projects:', error);

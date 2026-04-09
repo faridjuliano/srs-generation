@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { generateSRSFromTemplate } from '@/lib/srsTemplateGenerator';
 import Link from "next/link";
 
 
@@ -58,42 +57,36 @@ export default function NewSRSPage() {
       let generatedContent: unknown = null;
       let validationResult: unknown = null;
 
-      // Try API first
-      try {
-        const response = await fetch('/api/srs/generate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(formData),
-        });
+      const response = await fetch('/api/srs/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
 
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success && result.document) {
-            generatedContent = result.document;
-            validationResult = result.validation ?? null;
-            console.log('SRS generated from API');
-          }
-        } else {
+      if (!response.ok) {
+        let apiMessage = 'Failed to generate SRS from API';
+        try {
           const errorData = await response.json();
-          console.warn('API error:', errorData.error);
+          if (typeof errorData?.error === 'string' && errorData.error.trim().length > 0) {
+            apiMessage = errorData.error;
+          }
+        } catch {
+          // Keep default message when response body is not JSON.
         }
-      } catch (apiError) {
-        console.warn('API call failed, using template generator:', apiError);
+        throw new Error(apiMessage);
       }
 
-      // If API failed, use template generator
-      if (!generatedContent) {
-        console.log('Using template generator as fallback');
-        generatedContent = generateSRSFromTemplate({
-          projectName: projectName || 'Unnamed Project',
-          authorName: authorName || 'Unknown Author',
-          projectVision: projectVision || 'No vision provided',
-          srsStandard: srsStandard || 'IEEE 830-1998',
-          uploadedFiles: uploadedFiles || []
-        });
+      const result = await response.json();
+      const apiGeneratedContent = result?.content ?? result?.document ?? null;
+      if (!result?.success || !apiGeneratedContent) {
+        throw new Error('API returned success=false or empty SRS content');
       }
+
+      generatedContent = apiGeneratedContent;
+      validationResult = result.validationResult ?? result.validation ?? null;
+      console.log('SRS generated from API');
 
       // Store generated data
       const generatedData = {
@@ -102,11 +95,11 @@ export default function NewSRSPage() {
         validationResult,
       };
 
-      localStorage.setItem('srs-generated', JSON.stringify(generatedData));
+      sessionStorage.setItem('srs-generated', JSON.stringify(generatedData));
 
 
       // Save draft
-      localStorage.setItem('srs-draft', JSON.stringify({
+      sessionStorage.setItem('srs-draft', JSON.stringify({
         ...formData,
         savedAt: new Date().toISOString(),
       }));
