@@ -947,6 +947,21 @@ export default function SRSResultsPage() {
                     }}
                   />
 
+                  {editableContent.systemUseCases && editableContent.systemUseCases.length > 0 && (
+                    <SystemUseCasesSection
+                      useCases={editableContent.systemUseCases}
+                      isEditing={isEditing}
+                      onUpdateUseCase={(index: number, useCase: any) => {
+                        const updated = [...(editableContent.systemUseCases || [])];
+                        updated[index] = useCase;
+                        setEditableContent({
+                          ...editableContent,
+                          systemUseCases: updated
+                        });
+                      }}
+                    />
+                  )}
+
                   {((editableContent.dataRequirements?.logicalDataModel || '').trim() ||
                     (editableContent.dataRequirements?.dataEntities?.length || 0) > 0 ||
                     (editableContent.dataRequirements?.dataRetention?.length || 0) > 0 ||
@@ -1073,20 +1088,6 @@ export default function SRSResultsPage() {
                     </div>
                   )}
 
-                  {editableContent.systemUseCases && editableContent.systemUseCases.length > 0 && (
-                    <SystemUseCasesSection
-                      useCases={editableContent.systemUseCases}
-                      isEditing={isEditing}
-                      onUpdateUseCase={(index: number, useCase: any) => {
-                        const updated = [...(editableContent.systemUseCases || [])];
-                        updated[index] = useCase;
-                        setEditableContent({
-                          ...editableContent,
-                          systemUseCases: updated
-                        });
-                      }}
-                    />
-                  )}
 
                   {editableContent.otherNonfunctionalRequirements && (
                     <OtherNonfunctionalRequirementsSection

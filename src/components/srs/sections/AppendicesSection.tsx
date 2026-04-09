@@ -24,7 +24,7 @@ export const AppendicesSection: React.FC<AppendicesSectionProps> = ({
   ];
 
   return (
-    <Section number="6" title="Appendices" withBorder={false}>
+    <Section title="Appendices" withBorder={false}>
       <Subsection number="A" title="Document Metadata">
         <MetadataGrid items={metadataItems} columns={2} />
       </Subsection>

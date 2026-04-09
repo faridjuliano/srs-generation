@@ -27,14 +27,14 @@ export const SystemUseCasesSection: React.FC<SystemUseCasesSectionProps> = ({
   const safeUseCases = Array.isArray(useCases) ? useCases : [];
 
   return (
-    <Section number="4" title="System Use Cases">
+    <Section number="6" title="System Use Cases">
       {safeUseCases.length === 0 ? (
         <p className="text-slate-600 dark:text-slate-400">No use cases defined.</p>
       ) : (
         safeUseCases.map((useCase, index) => (
           <div key={index} className="mb-6 pb-6 border-b border-slate-200 dark:border-slate-700 last:border-b-0">
             <Subsection
-              number={`4.${index + 1}`}
+              number={`6.${index + 1}`}
               title={`${useCase.name} (${useCase.identifier})`}
             >
               <div className="space-y-4">

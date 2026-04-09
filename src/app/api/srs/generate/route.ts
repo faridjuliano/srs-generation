@@ -5,14 +5,6 @@ import { generatePrompt } from './promptBuilder';
 // Prompt generation moved to ./promptBuilder for cleaner route.ts.
 const HARD_CODED_PROMPT_SET: 'default' | 'iso-strict' = 'iso-strict';
 
-function tryParseJson(candidate: string): unknown | null {
-  try {
-    return JSON.parse(candidate);
-  } catch {
-    return null;
-  }
-}
-
 function extractModelText(response: {
   text: () => string;
   candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
@@ -49,49 +41,6 @@ CONTENT TO REPAIR:
 ${invalidJson}`;
 }
 
-function parseGeminiJsonResponse(rawText: string): unknown {
-  const trimmed = rawText
-    .trim()
-    .replace(/^\uFEFF/, '')
-    .replace(/[“”]/g, '"')
-    .replace(/[‘’]/g, "'")
-    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
-  const fencedMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const fencedContent = fencedMatch?.[1]?.trim();
-
-  const firstBrace = trimmed.indexOf('{');
-  const lastBrace = trimmed.lastIndexOf('}');
-  const objectSlice =
-    firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace
-      ? trimmed.slice(firstBrace, lastBrace + 1)
-      : '';
-
-  const candidates = [trimmed, fencedContent, objectSlice]
-    .filter((value): value is string => Boolean(value && value.length > 0));
-
-  const uniqueCandidates = [...new Set(candidates)];
-  const parseErrors: string[] = [];
-
-  for (const candidate of uniqueCandidates) {
-    const direct = tryParseJson(candidate);
-    if (direct !== null) {
-      return direct;
-    }
-
-    // Common LLM JSON issue: trailing commas before closing braces/brackets.
-    const withoutTrailingCommas = candidate.replace(/,\s*([}\]])/g, '$1');
-    const repaired = tryParseJson(withoutTrailingCommas);
-    if (repaired !== null) {
-      return repaired;
-    }
-
-    parseErrors.push(`candidate length ${candidate.length}`);
-  }
-
-  throw new Error(
-    `Model returned invalid JSON that could not be parsed. Tried ${uniqueCandidates.length} candidate(s). ${parseErrors.join('; ')}`
-  );
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -153,7 +102,7 @@ export async function POST(request: NextRequest) {
 
     let parsedDocument: unknown;
     try {
-      parsedDocument = parseGeminiJsonResponse(text);
+      parsedDocument = JSON.parse(text);
     } catch (firstParseError) {
       console.warn('Initial JSON parse failed, attempting one repair pass.');
 
@@ -173,7 +122,7 @@ export async function POST(request: NextRequest) {
         throw firstParseError;
       }
 
-      parsedDocument = parseGeminiJsonResponse(repairedText);
+      parsedDocument = JSON.parse(repairedText);
     }
 
     if (!parsedDocument || typeof parsedDocument !== 'object' || Array.isArray(parsedDocument)) {

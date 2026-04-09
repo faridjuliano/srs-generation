@@ -32,8 +32,8 @@ export const FunctionalRequirementsSection: React.FC<FunctionalRequirementsSecti
   };
 
   return (
-    <Section number="3" title="System Requirements">
-      <Subsection number="3.1" title="Functional Requirements">
+    <Section number="4" title="System Requirements">
+      <Subsection number="4.1" title="Functional Requirements">
         <div className="space-y-6">
           {safeRequirements.length === 0 && !isEditing && (
             <p className="text-slate-500 dark:text-slate-400 italic text-sm">
