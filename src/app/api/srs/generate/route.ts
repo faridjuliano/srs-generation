@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { generatePrompt } from './promptBuilder';
+import { validateSRS, type SRSDocument } from '@/lib/srsValidator';
 
 // Prompt generation moved to ./promptBuilder for cleaner route.ts.
 const HARD_CODED_PROMPT_SET: 'default' | 'iso-strict' = 'iso-strict';
+const HARD_CODED_ENABLE_VALIDATION = true;
 
 function extractModelText(response: {
   text: () => string;
@@ -137,11 +139,16 @@ export async function POST(request: NextRequest) {
     console.log(JSON.stringify(parsedDocument, null, 2));
     console.log('=== END GEMINI RESPONSE ===');
 
-    // TODO: Re-enable validation after testing
-    // const validationResult = validateSRS(parsedDocument as SRSDocument);
-    // return NextResponse.json({ success: true, document: parsedDocument, validation: validationResult });
+    if (HARD_CODED_ENABLE_VALIDATION) {
+      const validationResult = validateSRS(parsedDocument as SRSDocument);
+      return NextResponse.json({
+        success: true,
+        content: parsedDocument,
+        validation: validationResult,
+        validationResult
+      });
+    }
 
-    // For now, skip validation and return the document
     return NextResponse.json({ success: true, content: parsedDocument });
   } catch (error) {
     console.error('Error generating SRS:', error);

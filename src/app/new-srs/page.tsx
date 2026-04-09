@@ -199,10 +199,10 @@ Security is critical, requiring 2FA for all admin actions.'`;
             <span className="material-symbols-outlined">settings</span>
             <span className="text-sm font-medium">Settings</span>
           </a>
-          <a className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
-            <span className="material-symbols-outlined">help</span>
-            <span className="text-sm font-medium">Documentation</span>
-          </a>
+          {/*<a className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">*/}
+          {/*  <span className="material-symbols-outlined">help</span>*/}
+          {/*  <span className="text-sm font-medium">Documentation</span>*/}
+          {/*</a>*/}
         </div>
         <div className="p-4 border-t border-[#e7e9f3] dark:border-[#2a2e3b]">
           <div className="flex items-center gap-3">

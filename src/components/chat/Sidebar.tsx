@@ -42,12 +42,12 @@ export function Sidebar({ onNewChat, className = '' }: SidebarProps) {
         >
           <span className="text-sm font-medium">Code Review</span>
         </a>
-        <a
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          href="#"
-        >
-          <span className="text-sm font-medium">Documentation</span>
-        </a>
+        {/*<a*/}
+        {/*  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"*/}
+        {/*  href="#"*/}
+        {/*>*/}
+        {/*  <span className="text-sm font-medium">Documentation</span>*/}
+        {/*</a>*/}
         <div className="my-2 border-t border-slate-200 dark:border-slate-800"></div>
         <a
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
