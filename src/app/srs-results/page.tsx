@@ -474,6 +474,49 @@ export default function SRSResultsPage() {
     ]
   });
 
+  const updateRootField = <K extends keyof EditableContent>(key: K, value: EditableContent[K]) => {
+    setEditableContent(prev => ({ ...prev, [key]: value }));
+  };
+
+  const updateNestedField = <K extends keyof EditableContent>(
+    key: K,
+    patch: Partial<Record<string, unknown>>
+  ) => {
+    setEditableContent(prev => ({
+      ...prev,
+      [key]: {
+        ...(asRecord(prev[key])),
+        ...patch
+      }
+    }));
+  };
+
+  const updateArrayItem = <K extends keyof EditableContent>(key: K, index: number, value: unknown) => {
+    setEditableContent(prev => {
+      const current = Array.isArray(prev[key]) ? [...(prev[key] as unknown[])] : [];
+      current[index] = value;
+      return {
+        ...prev,
+        [key]: current
+      };
+    });
+  };
+
+  const renderSimpleList = (title: string, items: string[], keyPrefix: string) => {
+    if (items.length === 0) return null;
+
+    return (
+      <div>
+        <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{title}</p>
+        <ul className="list-disc ml-5 text-sm text-slate-600 dark:text-slate-400 space-y-1">
+          {items.map((item, idx) => (
+            <li key={`${keyPrefix}-${idx}`}>{item}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
+
   useEffect(() => {
     try {
       // Load generated data from localStorage
@@ -743,50 +786,10 @@ export default function SRSResultsPage() {
                     definitions={editableContent.introduction?.definitions || []}
                     references={editableContent.introduction?.references || []}
                     isEditing={isEditing}
-                    onUpdatePurpose={(val) =>
-                      setEditableContent({
-                        ...editableContent,
-                        introduction: {
-                          purpose: val,
-                          references: editableContent.introduction?.references || [],
-                          scope: editableContent.introduction?.scope,
-                          definitions: editableContent.introduction?.definitions
-                        }
-                      })
-                    }
-                    onUpdateScope={(val) =>
-                      setEditableContent({
-                        ...editableContent,
-                        introduction: {
-                          purpose: editableContent.introduction?.purpose || '',
-                          references: editableContent.introduction?.references || [],
-                          scope: val,
-                          definitions: editableContent.introduction?.definitions
-                        }
-                      })
-                    }
-                    onUpdateDefinitions={(val) =>
-                      setEditableContent({
-                        ...editableContent,
-                        introduction: {
-                          purpose: editableContent.introduction?.purpose || '',
-                          references: editableContent.introduction?.references || [],
-                          scope: editableContent.introduction?.scope,
-                          definitions: val
-                        }
-                      })
-                    }
-                    onUpdateReferences={(val) =>
-                      setEditableContent({
-                        ...editableContent,
-                        introduction: {
-                          purpose: editableContent.introduction?.purpose || '',
-                          references: val,
-                          scope: editableContent.introduction?.scope,
-                          definitions: editableContent.introduction?.definitions
-                        }
-                      })
-                    }
+                    onUpdatePurpose={(val) => updateNestedField('introduction', { purpose: val })}
+                    onUpdateScope={(val) => updateNestedField('introduction', { scope: val })}
+                    onUpdateDefinitions={(val) => updateNestedField('introduction', { definitions: val })}
+                    onUpdateReferences={(val) => updateNestedField('introduction', { references: val })}
                   />
 
                   <OverallDescriptionSectionNew
@@ -803,88 +806,16 @@ export default function SRSResultsPage() {
                     assumptions={editableContent.overallDescription?.assumptions || []}
                     isEditing={isEditing}
                     // New API format handlers
-                    onUpdateUserClassesAndCharacteristics={(val) =>
-                      setEditableContent({
-                        ...editableContent,
-                        overallDescription: {
-                          ...editableContent.overallDescription,
-                          userClassesAndCharacteristics: val
-                        } as any
-                      })
-                    }
-                    onUpdateOperatingEnvironment={(val) =>
-                      setEditableContent({
-                        ...editableContent,
-                        overallDescription: {
-                          ...editableContent.overallDescription,
-                          operatingEnvironment: val
-                        } as any
-                      })
-                    }
-                    onUpdateDesignAndImplementationConstraints={(val) =>
-                      setEditableContent({
-                        ...editableContent,
-                        overallDescription: {
-                          ...editableContent.overallDescription,
-                          designAndImplementationConstraints: val
-                        } as any
-                      })
-                    }
-                    onUpdateAssumptionsAndDependencies={(val) =>
-                      setEditableContent({
-                        ...editableContent,
-                        overallDescription: {
-                          ...editableContent.overallDescription,
-                          assumptionsAndDependencies: val
-                        } as any
-                      })
-                    }
+                    onUpdateUserClassesAndCharacteristics={(val) => updateNestedField('overallDescription', { userClassesAndCharacteristics: val })}
+                    onUpdateOperatingEnvironment={(val) => updateNestedField('overallDescription', { operatingEnvironment: val })}
+                    onUpdateDesignAndImplementationConstraints={(val) => updateNestedField('overallDescription', { designAndImplementationConstraints: val })}
+                    onUpdateAssumptionsAndDependencies={(val) => updateNestedField('overallDescription', { assumptionsAndDependencies: val })}
                     // Legacy format handlers
-                    onUpdateProductPerspective={(val) =>
-                      setEditableContent({
-                        ...editableContent,
-                        overallDescription: {
-                          ...editableContent.overallDescription,
-                          productPerspective: val
-                        } as any
-                      })
-                    }
-                    onUpdateProductFunctions={(val) =>
-                      setEditableContent({
-                        ...editableContent,
-                        overallDescription: {
-                          ...editableContent.overallDescription,
-                          productFunctions: val
-                        } as any
-                      })
-                    }
-                    onUpdateUserCharacteristics={(val) =>
-                      setEditableContent({
-                        ...editableContent,
-                        overallDescription: {
-                          ...editableContent.overallDescription,
-                          userCharacteristics: val
-                        } as any
-                      })
-                    }
-                    onUpdateConstraints={(val) =>
-                      setEditableContent({
-                        ...editableContent,
-                        overallDescription: {
-                          ...editableContent.overallDescription,
-                          constraints: val
-                        } as any
-                      })
-                    }
-                    onUpdateAssumptions={(val) =>
-                      setEditableContent({
-                        ...editableContent,
-                        overallDescription: {
-                          ...editableContent.overallDescription,
-                          assumptions: val
-                        } as any
-                      })
-                    }
+                    onUpdateProductPerspective={(val) => updateNestedField('overallDescription', { productPerspective: val })}
+                    onUpdateProductFunctions={(val) => updateNestedField('overallDescription', { productFunctions: val })}
+                    onUpdateUserCharacteristics={(val) => updateNestedField('overallDescription', { userCharacteristics: val })}
+                    onUpdateConstraints={(val) => updateNestedField('overallDescription', { constraints: val })}
+                    onUpdateAssumptions={(val) => updateNestedField('overallDescription', { assumptions: val })}
                   />
 
                   {editableContent.externalInterfaceRequirements && (
@@ -894,71 +825,30 @@ export default function SRSResultsPage() {
                       softwareInterfaces={editableContent.externalInterfaceRequirements.softwareInterfaces || []}
                       communicationInterfaces={editableContent.externalInterfaceRequirements.communicationInterfaces || ''}
                       isEditing={isEditing}
-                      onUpdateUserInterfaces={(val) =>
-                        setEditableContent({
-                          ...editableContent,
-                          externalInterfaceRequirements: { ...editableContent.externalInterfaceRequirements, userInterfaces: val }
-                        })
-                      }
-                      onUpdateHardwareInterfaces={(val) =>
-                        setEditableContent({
-                          ...editableContent,
-                          externalInterfaceRequirements: { ...editableContent.externalInterfaceRequirements, hardwareInterfaces: val }
-                        })
-                      }
-                      onUpdateSoftwareInterfaces={(val) =>
-                        setEditableContent({
-                          ...editableContent,
-                          externalInterfaceRequirements: { ...editableContent.externalInterfaceRequirements, softwareInterfaces: val }
-                        })
-                      }
-                      onUpdateCommunicationInterfaces={(val) =>
-                        setEditableContent({
-                          ...editableContent,
-                          externalInterfaceRequirements: { ...editableContent.externalInterfaceRequirements, communicationInterfaces: val }
-                        })
-                      }
+                      onUpdateUserInterfaces={(val) => updateNestedField('externalInterfaceRequirements', { userInterfaces: val })}
+                      onUpdateHardwareInterfaces={(val) => updateNestedField('externalInterfaceRequirements', { hardwareInterfaces: val })}
+                      onUpdateSoftwareInterfaces={(val) => updateNestedField('externalInterfaceRequirements', { softwareInterfaces: val })}
+                      onUpdateCommunicationInterfaces={(val) => updateNestedField('externalInterfaceRequirements', { communicationInterfaces: val })}
                     />
                   )}
 
                   <FunctionalRequirementsSection
                     requirements={editableContent.functionalRequirements || []}
                     isEditing={isEditing}
-                    onUpdateRequirement={(index: number, requirement: any) => {
-                      const updated = [...(editableContent.functionalRequirements || [])];
-                      updated[index] = requirement;
-                      setEditableContent({
-                        ...editableContent,
-                        functionalRequirements: updated
-                      });
-                    }}
+                    onUpdateRequirement={(index: number, requirement: any) => updateArrayItem('functionalRequirements', index, requirement)}
                   />
 
                   <NonFunctionalRequirementsSectionNew
                     requirements={editableContent.nonFunctionalRequirements || []}
                     isEditing={isEditing}
-                    onUpdateRequirement={(index: number, requirement: any) => {
-                      const updated = [...(editableContent.nonFunctionalRequirements || [])];
-                      updated[index] = requirement;
-                      setEditableContent({
-                        ...editableContent,
-                        nonFunctionalRequirements: updated
-                      });
-                    }}
+                    onUpdateRequirement={(index: number, requirement: any) => updateArrayItem('nonFunctionalRequirements', index, requirement)}
                   />
 
                   {editableContent.systemUseCases && editableContent.systemUseCases.length > 0 && (
                     <SystemUseCasesSection
                       useCases={editableContent.systemUseCases}
                       isEditing={isEditing}
-                      onUpdateUseCase={(index: number, useCase: any) => {
-                        const updated = [...(editableContent.systemUseCases || [])];
-                        updated[index] = useCase;
-                        setEditableContent({
-                          ...editableContent,
-                          systemUseCases: updated
-                        });
-                      }}
+                      onUpdateUseCase={(index: number, useCase: any) => updateArrayItem('systemUseCases', index, useCase)}
                     />
                   )}
 
@@ -971,26 +861,8 @@ export default function SRSResultsPage() {
                       {editableContent.dataRequirements?.logicalDataModel && (
                         <p className="text-sm text-slate-700 dark:text-slate-300">{editableContent.dataRequirements.logicalDataModel}</p>
                       )}
-                      {(editableContent.dataRequirements?.dataEntities || []).length > 0 && (
-                        <div>
-                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Data Entities</p>
-                          <ul className="list-disc ml-5 text-sm text-slate-600 dark:text-slate-400 space-y-1">
-                            {(editableContent.dataRequirements?.dataEntities || []).map((item, idx) => (
-                              <li key={`de-${idx}`}>{item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      {(editableContent.dataRequirements?.dataRetention || []).length > 0 && (
-                        <div>
-                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Data Retention</p>
-                          <ul className="list-disc ml-5 text-sm text-slate-600 dark:text-slate-400 space-y-1">
-                            {(editableContent.dataRequirements?.dataRetention || []).map((item, idx) => (
-                              <li key={`dr-${idx}`}>{item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
+                      {renderSimpleList('Data Entities', editableContent.dataRequirements?.dataEntities || [], 'de')}
+                      {renderSimpleList('Data Retention', editableContent.dataRequirements?.dataRetention || [], 'dr')}
                     </div>
                   )}
 
@@ -998,26 +870,8 @@ export default function SRSResultsPage() {
                     (editableContent.verificationAndAcceptance?.verificationMapping?.length || 0) > 0) && (
                     <div className="space-y-3">
                       <h3 className="text-lg font-semibold text-slate-900 dark:text-white">9. Verification and Acceptance</h3>
-                      {(editableContent.verificationAndAcceptance?.acceptanceCriteria || []).length > 0 && (
-                        <div>
-                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Acceptance Criteria</p>
-                          <ul className="list-disc ml-5 text-sm text-slate-600 dark:text-slate-400 space-y-1">
-                            {(editableContent.verificationAndAcceptance?.acceptanceCriteria || []).map((item, idx) => (
-                              <li key={`ac-${idx}`}>{item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      {(editableContent.verificationAndAcceptance?.verificationMapping || []).length > 0 && (
-                        <div>
-                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Verification Mapping</p>
-                          <ul className="list-disc ml-5 text-sm text-slate-600 dark:text-slate-400 space-y-1">
-                            {(editableContent.verificationAndAcceptance?.verificationMapping || []).map((item, idx) => (
-                              <li key={`vm-${idx}`}>{item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
+                      {renderSimpleList('Acceptance Criteria', editableContent.verificationAndAcceptance?.acceptanceCriteria || [], 'ac')}
+                      {renderSimpleList('Verification Mapping', editableContent.verificationAndAcceptance?.verificationMapping || [], 'vm')}
                     </div>
                   )}
 
@@ -1026,26 +880,8 @@ export default function SRSResultsPage() {
                     (editableContent.traceability?.requirementDependencies?.length || 0) > 0) && (
                     <div className="space-y-3">
                       <h3 className="text-lg font-semibold text-slate-900 dark:text-white">10. Traceability</h3>
-                      {(editableContent.traceability?.stakeholderToRequirements || []).length > 0 && (
-                        <div>
-                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Stakeholder to Requirements</p>
-                          <ul className="list-disc ml-5 text-sm text-slate-600 dark:text-slate-400 space-y-1">
-                            {(editableContent.traceability?.stakeholderToRequirements || []).map((item, idx) => (
-                              <li key={`tr-s-${idx}`}>{item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      {(editableContent.traceability?.useCaseToRequirements || []).length > 0 && (
-                        <div>
-                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Use Case to Requirements</p>
-                          <ul className="list-disc ml-5 text-sm text-slate-600 dark:text-slate-400 space-y-1">
-                            {(editableContent.traceability?.useCaseToRequirements || []).map((item, idx) => (
-                              <li key={`tr-u-${idx}`}>{item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
+                      {renderSimpleList('Stakeholder to Requirements', editableContent.traceability?.stakeholderToRequirements || [], 'tr-s')}
+                      {renderSimpleList('Use Case to Requirements', editableContent.traceability?.useCaseToRequirements || [], 'tr-u')}
                     </div>
                   )}
 
@@ -1055,36 +891,9 @@ export default function SRSResultsPage() {
                     (editableContent.qualityCheckSummary?.assumptionsMade?.length || 0) > 0) && (
                     <div className="space-y-3">
                       <h3 className="text-lg font-semibold text-slate-900 dark:text-white">12. Quality Check Summary</h3>
-                      {(editableContent.qualityCheckSummary?.completenessNotes || []).length > 0 && (
-                        <div>
-                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Completeness Notes</p>
-                          <ul className="list-disc ml-5 text-sm text-slate-600 dark:text-slate-400 space-y-1">
-                            {(editableContent.qualityCheckSummary?.completenessNotes || []).map((item, idx) => (
-                              <li key={`qc-c-${idx}`}>{item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      {(editableContent.qualityCheckSummary?.ambiguityRisks || []).length > 0 && (
-                        <div>
-                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Ambiguity Risks</p>
-                          <ul className="list-disc ml-5 text-sm text-slate-600 dark:text-slate-400 space-y-1">
-                            {(editableContent.qualityCheckSummary?.ambiguityRisks || []).map((item, idx) => (
-                              <li key={`qc-a-${idx}`}>{item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      {(editableContent.qualityCheckSummary?.consistencyRisks || []).length > 0 && (
-                        <div>
-                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Consistency Risks</p>
-                          <ul className="list-disc ml-5 text-sm text-slate-600 dark:text-slate-400 space-y-1">
-                            {(editableContent.qualityCheckSummary?.consistencyRisks || []).map((item, idx) => (
-                              <li key={`qc-r-${idx}`}>{item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
+                      {renderSimpleList('Completeness Notes', editableContent.qualityCheckSummary?.completenessNotes || [], 'qc-c')}
+                      {renderSimpleList('Ambiguity Risks', editableContent.qualityCheckSummary?.ambiguityRisks || [], 'qc-a')}
+                      {renderSimpleList('Consistency Risks', editableContent.qualityCheckSummary?.consistencyRisks || [], 'qc-r')}
                     </div>
                   )}
 
@@ -1096,30 +905,10 @@ export default function SRSResultsPage() {
                       securityRequirements={editableContent.otherNonfunctionalRequirements.securityRequirements || []}
                       softwareQualityAttributes={editableContent.otherNonfunctionalRequirements.softwareQualityAttributes || []}
                       isEditing={isEditing}
-                      onUpdatePerformanceRequirements={(val) =>
-                        setEditableContent({
-                          ...editableContent,
-                          otherNonfunctionalRequirements: { ...editableContent.otherNonfunctionalRequirements, performanceRequirements: val }
-                        })
-                      }
-                      onUpdateSafetyRequirements={(val) =>
-                        setEditableContent({
-                          ...editableContent,
-                          otherNonfunctionalRequirements: { ...editableContent.otherNonfunctionalRequirements, safetyRequirements: val }
-                        })
-                      }
-                      onUpdateSecurityRequirements={(val) =>
-                        setEditableContent({
-                          ...editableContent,
-                          otherNonfunctionalRequirements: { ...editableContent.otherNonfunctionalRequirements, securityRequirements: val }
-                        })
-                      }
-                      onUpdateSoftwareQualityAttributes={(val) =>
-                        setEditableContent({
-                          ...editableContent,
-                          otherNonfunctionalRequirements: { ...editableContent.otherNonfunctionalRequirements, softwareQualityAttributes: val }
-                        })
-                      }
+                      onUpdatePerformanceRequirements={(val) => updateNestedField('otherNonfunctionalRequirements', { performanceRequirements: val })}
+                      onUpdateSafetyRequirements={(val) => updateNestedField('otherNonfunctionalRequirements', { safetyRequirements: val })}
+                      onUpdateSecurityRequirements={(val) => updateNestedField('otherNonfunctionalRequirements', { securityRequirements: val })}
+                      onUpdateSoftwareQualityAttributes={(val) => updateNestedField('otherNonfunctionalRequirements', { softwareQualityAttributes: val })}
                     />
                   )}
                 </>
@@ -1133,11 +922,11 @@ export default function SRSResultsPage() {
                     conventions={editableContent.introduction_conventions || ''}
                     references={editableContent.introduction_references || []}
                     isEditing={isEditing}
-                    onUpdatePurpose={(val) => setEditableContent({ ...editableContent, introduction_purpose: val })}
-                    onUpdateScope={(val) => setEditableContent({ ...editableContent, introduction_scope: val })}
-                    onUpdateProduct={(val) => setEditableContent({ ...editableContent, introduction_product: val })}
-                    onUpdateConventions={(val) => setEditableContent({ ...editableContent, introduction_conventions: val })}
-                    onUpdateReferences={(val) => setEditableContent({ ...editableContent, introduction_references: val })}
+                    onUpdatePurpose={(val) => updateRootField('introduction_purpose', val)}
+                    onUpdateScope={(val) => updateRootField('introduction_scope', val)}
+                    onUpdateProduct={(val) => updateRootField('introduction_product', val)}
+                    onUpdateConventions={(val) => updateRootField('introduction_conventions', val)}
+                    onUpdateReferences={(val) => updateRootField('introduction_references', val)}
                   />
 
                   <OverallDescriptionSection
@@ -1147,11 +936,11 @@ export default function SRSResultsPage() {
                     constraints={editableContent.constraints || []}
                     assumptionsDependencies={editableContent.assumptions_dependencies || ''}
                     isEditing={isEditing}
-                    onUpdatePerspective={(val) => setEditableContent({ ...editableContent, product_perspective: val })}
-                    onUpdateFunctions={(val) => setEditableContent({ ...editableContent, product_functions: val })}
-                    onUpdateUserCharacteristics={(val) => setEditableContent({ ...editableContent, user_characteristics: val })}
-                    onUpdateConstraints={(val) => setEditableContent({ ...editableContent, constraints: val })}
-                    onUpdateAssumptionsDependencies={(val) => setEditableContent({ ...editableContent, assumptions_dependencies: val })}
+                    onUpdatePerspective={(val) => updateRootField('product_perspective', val)}
+                    onUpdateFunctions={(val) => updateRootField('product_functions', val)}
+                    onUpdateUserCharacteristics={(val) => updateRootField('user_characteristics', val)}
+                    onUpdateConstraints={(val) => updateRootField('constraints', val)}
+                    onUpdateAssumptionsDependencies={(val) => updateRootField('assumptions_dependencies', val)}
                   />
 
                   <ExternalInterfaceRequirementsSection
@@ -1160,20 +949,16 @@ export default function SRSResultsPage() {
                     softwareInterfaces={editableContent.software_interfaces || []}
                     communicationInterfaces={editableContent.communication_interfaces || ''}
                     isEditing={isEditing}
-                    onUpdateUserInterfaces={(val) => setEditableContent({ ...editableContent, user_interfaces: val })}
-                    onUpdateHardwareInterfaces={(val) => setEditableContent({ ...editableContent, hardware_interfaces: val })}
-                    onUpdateSoftwareInterfaces={(val) => setEditableContent({ ...editableContent, software_interfaces: val })}
-                    onUpdateCommunicationInterfaces={(val) => setEditableContent({ ...editableContent, communication_interfaces: val })}
+                    onUpdateUserInterfaces={(val) => updateRootField('user_interfaces', val)}
+                    onUpdateHardwareInterfaces={(val) => updateRootField('hardware_interfaces', val)}
+                    onUpdateSoftwareInterfaces={(val) => updateRootField('software_interfaces', val)}
+                    onUpdateCommunicationInterfaces={(val) => updateRootField('communication_interfaces', val)}
                   />
 
                   <SystemFeaturesSection
                     features={editableContent.system_features || []}
                     isEditing={isEditing}
-                    onUpdateFeature={(index: number, feature: any) => {
-                      const updated = [...(editableContent.system_features || [])];
-                      updated[index] = feature;
-                      setEditableContent({ ...editableContent, system_features: updated });
-                    }}
+                    onUpdateFeature={(index: number, feature: any) => updateArrayItem('system_features', index, feature)}
                   />
 
                   <NonFunctionalRequirementsSection
@@ -1182,10 +967,10 @@ export default function SRSResultsPage() {
                     softwareQualityAttributes={editableContent.software_quality_attributes || ''}
                     businessRules={editableContent.business_rules || []}
                     isEditing={isEditing}
-                    onUpdatePerformanceRequirements={(val) => setEditableContent({ ...editableContent, performance_requirements: val })}
-                    onUpdateSecurityRequirements={(val) => setEditableContent({ ...editableContent, security_requirements: val })}
-                    onUpdateSoftwareQualityAttributes={(val) => setEditableContent({ ...editableContent, software_quality_attributes: val })}
-                    onUpdateBusinessRules={(val) => setEditableContent({ ...editableContent, business_rules: val })}
+                    onUpdatePerformanceRequirements={(val) => updateRootField('performance_requirements', val)}
+                    onUpdateSecurityRequirements={(val) => updateRootField('security_requirements', val)}
+                    onUpdateSoftwareQualityAttributes={(val) => updateRootField('software_quality_attributes', val)}
+                    onUpdateBusinessRules={(val) => updateRootField('business_rules', val)}
                   />
                 </>
               )}
