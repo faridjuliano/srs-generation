@@ -14,6 +14,7 @@ export function useJsonEditor() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [validating, setValidating] = useState(false);
+  const [autoFixing, setAutoFixing] = useState(false);
 
   // Load initial payload from sessionStorage
   useEffect(() => {
@@ -109,6 +110,45 @@ export function useJsonEditor() {
     }
   };
 
+  const autoFixIssues = async () => {
+    if (!payload?.content || !payload?.validation?.issues.length) return;
+    setAutoFixing(true);
+    try {
+      const response = await fetch(`${backendBaseUrl}/api/srs/auto-fix`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: payload.content,
+          issues: payload.validation.issues
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Auto-fix failed: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      // Update content with fixed version
+      if (result.content || result.fixedContent) {
+        setPayload(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            content: result.content || result.fixedContent
+          };
+        });
+      }
+
+      // Revalidate after fixing
+      await revalidateWithBackend();
+    } catch (err) {
+      console.error('Auto-fix error:', err);
+    } finally {
+      setAutoFixing(false);
+    }
+  };
+
   return {
     payload,
     isEditing,
@@ -116,9 +156,11 @@ export function useJsonEditor() {
     loading,
     error,
     validating,
+    autoFixing,
     handleContentEdit,
     handleDiagramEdit,
-    revalidateWithBackend
+    revalidateWithBackend,
+    autoFixIssues
   };
 }
 

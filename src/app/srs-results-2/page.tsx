@@ -25,9 +25,11 @@ export default function SRSResults2Page() {
     loading,
     error,
     validating,
+    autoFixing,
     handleContentEdit,
     handleDiagramEdit,
-    revalidateWithBackend
+    revalidateWithBackend,
+    autoFixIssues
   } = useJsonEditor();
 
   const content = payload?.content ?? null;
@@ -158,7 +160,7 @@ export default function SRSResults2Page() {
 					  {validation.passed ? 'Passed with no blocking errors.' : 'Needs fixes before finalizing.'}
 					</p>
 				  </div>
-				  <div className="flex items-center gap-2 text-xs">
+				  <div className="flex items-center gap-2 text-xs flex-wrap justify-end">
 					<span className={`px-2 py-1 rounded-full font-medium ${validation.passed ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'}`}>
 					  {validation.passed ? 'Passed' : 'Failed'}
 					</span>
@@ -179,6 +181,18 @@ export default function SRSResults2Page() {
 					  </div>
 					))}
 				  </div>
+				)}
+
+				{!validation.passed && validation.issues.length > 0 && (
+				  <button
+					type="button"
+					onClick={autoFixIssues}
+					disabled={autoFixing}
+					className="mt-6 w-full px-4 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+				  >
+					{autoFixing && <span className="material-symbols-outlined animate-spin">refresh</span>}
+					{autoFixing ? 'Fixing Issues...' : 'Auto Fix Issues'}
+				  </button>
 				)}
 			  </div>
 			)}
