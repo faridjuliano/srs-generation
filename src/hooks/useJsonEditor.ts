@@ -2,13 +2,27 @@
  * Custom hook for managing JSON SRS editing state and persistence
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import type { ApiSrsPayload, JsonPath, JsonValue, JsonObject } from '@/lib/srsTypes';
 import { updateJsonAtPath, normalizeStoredPayload } from '@/lib/srsUtils';
 
 const backendBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
-export function useJsonEditor() {
+type UseJsonEditorReturn = {
+  payload: ApiSrsPayload | null;
+  isEditing: boolean;
+  setIsEditing: Dispatch<SetStateAction<boolean>>;
+  loading: boolean;
+  error: string | null;
+  validating: boolean;
+  autoFixing: boolean;
+  handleContentEdit: (path: JsonPath, value: JsonValue) => void;
+  handleDiagramEdit: (path: JsonPath, value: JsonValue) => void;
+  revalidateWithBackend: () => Promise<void>;
+  autoFixIssues: () => Promise<void>;
+};
+
+export function useJsonEditor(): UseJsonEditorReturn {
   const [payload, setPayload] = useState<ApiSrsPayload | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);

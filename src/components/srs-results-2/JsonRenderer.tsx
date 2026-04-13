@@ -3,9 +3,8 @@
  */
 
 import { type ReactNode } from 'react';
-import type { JsonValue, JsonObject, JsonPath } from '@/lib/srsTypes';
+import type { JsonValue, JsonPath } from '@/lib/srsTypes';
 import {
-  isObject,
   toLabel,
   normalizePriority,
   getPriorityBadgeClass,

@@ -18,19 +18,22 @@ import type { JsonValue } from '@/lib/srsTypes';
 export default function SRSResults2Page() {
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const editor = useJsonEditor();
   const {
-    payload,
-    isEditing,
-    setIsEditing,
-    loading,
-    error,
-    validating,
-    autoFixing,
-    handleContentEdit,
-    handleDiagramEdit,
-    revalidateWithBackend,
-    autoFixIssues
-  } = useJsonEditor();
+	payload,
+	isEditing,
+	setIsEditing,
+	loading,
+	error,
+	validating,
+	handleContentEdit,
+	handleDiagramEdit,
+	revalidateWithBackend
+  } = editor;
+  const autoFixing = 'autoFixing' in editor ? Boolean((editor as { autoFixing?: boolean }).autoFixing) : false;
+  const autoFixIssues = 'autoFixIssues' in editor
+	? ((editor as { autoFixIssues?: () => Promise<void> }).autoFixIssues ?? (async () => {}))
+	: async () => {};
 
   const content = payload?.content ?? null;
   const validation = payload?.validation ?? null;
@@ -184,15 +187,18 @@ export default function SRSResults2Page() {
 				)}
 
 				{!validation.passed && validation.issues.length > 0 && (
-				  <button
-					type="button"
-					onClick={autoFixIssues}
-					disabled={autoFixing}
-					className="mt-6 w-full px-4 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-				  >
-					{autoFixing && <span className="material-symbols-outlined animate-spin">refresh</span>}
-					{autoFixing ? 'Fixing Issues...' : 'Auto Fix Issues'}
-				  </button>
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={autoFixIssues}
+              disabled={autoFixing}
+              className="mt-6 w-1/4 text-center px-4 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {autoFixing && <span className="material-symbols-outlined animate-spin">refresh</span>}
+              {autoFixing ? 'Fixing Issues...' : 'Auto Fix Issues'}
+            </button>
+          </div>
+
 				)}
 			  </div>
 			)}
