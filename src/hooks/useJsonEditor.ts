@@ -18,6 +18,7 @@ type UseJsonEditorReturn = {
   autoFixing: boolean;
   handleContentEdit: (path: JsonPath, value: JsonValue) => void;
   handleDiagramEdit: (path: JsonPath, value: JsonValue) => void;
+  applySRSUpdate: (updatedContent: Record<string, unknown>) => void;
   revalidateWithBackend: () => Promise<void>;
   autoFixIssues: () => Promise<void>;
 };
@@ -91,6 +92,17 @@ export function useJsonEditor(): UseJsonEditorReturn {
       return {
         ...prev,
         diagrams: updateJsonAtPath(prev.diagrams, path, value) as JsonObject
+      };
+    });
+  };
+
+  const applySRSUpdate = (updatedContent: Record<string, unknown>) => {
+    if (!updatedContent || typeof updatedContent !== 'object' || Array.isArray(updatedContent)) return;
+    setPayload(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        content: updatedContent as JsonObject
       };
     });
   };
@@ -173,6 +185,7 @@ export function useJsonEditor(): UseJsonEditorReturn {
     autoFixing,
     handleContentEdit,
     handleDiagramEdit,
+    applySRSUpdate,
     revalidateWithBackend,
     autoFixIssues
   };

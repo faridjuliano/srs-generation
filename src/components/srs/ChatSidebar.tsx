@@ -6,9 +6,9 @@ import type { Message } from '@/lib/types';
 interface ChatSidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  srsContent?: Record<string, any>;
-  formData?: Record<string, any>;
-  onSRSUpdate?: (updatedContent: Record<string, any>) => void;
+  srsContent?: Record<string, unknown>;
+  formData?: Record<string, unknown>;
+  onSRSUpdate?: (updatedContent: Record<string, unknown>) => void;
 }
 
 export default function ChatSidebar({ 
@@ -59,26 +59,16 @@ export default function ChatSidebar({
     setError(null);
 
     try {
-      // Prepare the request with SRS context
+      // New backend contract: send current SRS content + user instruction.
       const requestBody = {
-        messages: [...messages, userMessage],
-        srsContext: srsContent,
-        formData: formData,
-        isRejectionRequest: false
+        content: srsContent ?? {},
+        instruction: input,
+        history: [...messages, userMessage].map((msg) => ({
+          role: msg.role,
+          content: msg.content
+        })),
+        formData: formData ?? {}
       };
-
-      // Check if user is asking for regeneration/updates
-      const lowerInput = input.toLowerCase();
-      const isRegenerationRequest = lowerInput.includes('regenerate') || 
-                                    lowerInput.includes('update') || 
-                                    lowerInput.includes('make') ||
-                                    lowerInput.includes('add') ||
-                                    lowerInput.includes('more detail') ||
-                                    lowerInput.includes('improve');
-
-      if (isRegenerationRequest) {
-        requestBody.isRejectionRequest = true;
-      }
 
       // Send to SRS-aware chat API
       const response = await fetch('/api/chat', {
@@ -96,18 +86,21 @@ export default function ChatSidebar({
       }
 
       const data = await response.json();
+      console.log(data, "datadatadatadatadata")
 
       // Add assistant response
       const assistantMessage: Message = {
         role: 'assistant',
-        content: data.message?.content || data.response || data.message || 'I could not generate a response.'
+        // content: data.message?.content || data.response || data.message || data.result || 'I could not generate a response.'
+        content: 'Regenerated SRS content received. The SRS document has been updated based on your instruction.'
       };
 
       setMessages(prev => [...prev, assistantMessage]);
 
       // If there's a regenerated SRS, update the parent component
-      if (data.updatedSRS && onSRSUpdate) {
-        onSRSUpdate(data.updatedSRS);
+      const updatedContent = data.updatedSRS || data.content || data.updatedContent || data.fixedContent;
+      if (updatedContent && onSRSUpdate) {
+        onSRSUpdate(updatedContent);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred';

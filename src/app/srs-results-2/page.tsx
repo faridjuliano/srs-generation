@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import Sidebar from '@/components/srs/Sidebar';
 import MermaidDiagram from '@/components/srs/MermaidDiagram';
+import ChatSidebar from '@/components/srs/ChatSidebar';
 import { JsonRenderer } from '@/components/srs-results-2/JsonRenderer';
 import { useJsonEditor } from '@/hooks/useJsonEditor';
 import {
@@ -18,6 +19,7 @@ import type { JsonValue } from '@/lib/srsTypes';
 export default function SRSResults2Page() {
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const editor = useJsonEditor();
   const {
 	payload,
@@ -28,6 +30,7 @@ export default function SRSResults2Page() {
 	validating,
 	handleContentEdit,
 	handleDiagramEdit,
+	applySRSUpdate,
 	revalidateWithBackend
   } = editor;
   const autoFixing = 'autoFixing' in editor ? Boolean((editor as { autoFixing?: boolean }).autoFixing) : false;
@@ -48,6 +51,11 @@ export default function SRSResults2Page() {
   const handleFinishEditing = async () => {
     setIsEditing(false);
     await revalidateWithBackend();
+  };
+
+  const handleChatSRSUpdate = async (updatedContent: Record<string, unknown>) => {
+	applySRSUpdate(updatedContent);
+	await revalidateWithBackend();
   };
 
 
@@ -126,6 +134,14 @@ export default function SRSResults2Page() {
 	  <div className="flex items-center gap-3 flex-shrink-0">
 		<button
 		  type="button"
+		  onClick={() => setIsChatOpen(true)}
+		  className="p-2 text-slate-500 hover:text-primary transition-colors"
+		  title="Open iteration chat"
+		>
+		  <span className="material-symbols-outlined text-lg">smart_toy</span>
+		</button>
+		<button
+		  type="button"
 		  onClick={() => {
 			if (isEditing) {
 			  handleFinishEditing();
@@ -198,7 +214,6 @@ export default function SRSResults2Page() {
               {autoFixing ? 'Fixing Issues...' : 'Auto Fix Issues'}
             </button>
           </div>
-
 				)}
 			  </div>
 			)}
@@ -273,6 +288,14 @@ export default function SRSResults2Page() {
 		  </div>
 		</div>
 	  </main>
+
+	  <ChatSidebar
+		isOpen={true}
+		onClose={() => setIsChatOpen(false)}
+		srsContent={content ?? undefined}
+		formData={{ projectName }}
+		onSRSUpdate={handleChatSRSUpdate}
+	  />
 	</div>
   );
 }
