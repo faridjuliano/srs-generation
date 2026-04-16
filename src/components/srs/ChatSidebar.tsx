@@ -134,14 +134,14 @@ export default function ChatSidebar({
             <span className="material-symbols-outlined text-primary">smart_toy</span>
             <h2 className="font-bold text-slate-900 dark:text-white">AI Assistant</h2>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
-            aria-label="Close chat"
-          >
-            <span className="material-symbols-outlined">close</span>
-          </button>
+          {/*<button*/}
+          {/*  type="button"*/}
+          {/*  onClick={onClose}*/}
+          {/*  className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"*/}
+          {/*  aria-label="Close chat"*/}
+          {/*>*/}
+          {/*  <span className="material-symbols-outlined">close</span>*/}
+          {/*</button>*/}
         </div>
 
         {/* Messages Area */}
