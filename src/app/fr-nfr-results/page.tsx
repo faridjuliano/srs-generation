@@ -3,15 +3,140 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import FrNfrAutoFixSuggestions from '@/components/fr-nfr/FrNfrAutoFixSuggestions';
 import FrNfrChatSidebar from '@/components/fr-nfr/FrNfrChatSidebar';
+import FrNfrValidationSummary from '@/components/fr-nfr/FrNfrValidationSummary';
 import { JsonRenderer } from '@/components/srs-results-2/JsonRenderer';
+import type {
+  FrNfrAutoFixSuggestion,
+  FrNfrStoredPayload,
+  FrNfrValidation,
+  FrNfrValidationIssue
+} from '@/lib/frNfrTypes';
 import { sectionOrder, toLabel, updateJsonAtPath } from '@/lib/srsUtils';
 import type { JsonPath, JsonValue } from '@/lib/srsTypes';
 
-type FrNfrStoredPayload = {
-  success: boolean;
-  content: Record<string, unknown>;
-};
+function toNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function normalizeValidation(raw: unknown): FrNfrValidation | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+
+  const record = raw as Record<string, unknown>;
+  const summary =
+    record.summary && typeof record.summary === 'object' && !Array.isArray(record.summary)
+      ? (record.summary as Record<string, unknown>)
+      : null;
+
+  const rawIssues = Array.isArray(record.issues) ? record.issues : [];
+  const issues = rawIssues
+    .map((issue): FrNfrValidationIssue | null => {
+      if (!issue || typeof issue !== 'object' || Array.isArray(issue)) return null;
+      const item = issue as Record<string, unknown>;
+
+      const rawSeverity =
+        (typeof item.severity === 'string' ? item.severity : undefined) ||
+        (typeof item.level === 'string' ? item.level : undefined) ||
+        (typeof item.type === 'string' ? item.type : undefined) ||
+        'info';
+
+      const severity: FrNfrValidationIssue['severity'] =
+        rawSeverity.toLowerCase() === 'error'
+          ? 'error'
+          : rawSeverity.toLowerCase() === 'warning'
+            ? 'warning'
+            : 'info';
+
+      const message =
+        (typeof item.message === 'string' && item.message.trim().length > 0
+          ? item.message
+          : typeof item.description === 'string' && item.description.trim().length > 0
+            ? item.description
+            : null) ?? 'Issue details unavailable.';
+
+      const path =
+        typeof item.path === 'string'
+          ? item.path
+          : Array.isArray(item.path)
+            ? item.path.filter(segment => typeof segment === 'string').join('.')
+            : undefined;
+
+      const normalized: FrNfrValidationIssue = { severity, message };
+      const normalizedMutable = normalized as FrNfrValidationIssue & {
+        requirementId?: string;
+        requirementType?: string;
+        category?: string;
+        field?: string;
+        details?: unknown;
+        raw?: Record<string, unknown>;
+      };
+
+      if (typeof item.code === 'string') normalizedMutable.code = item.code;
+      if (typeof item.requirementId === 'string') normalizedMutable.requirementId = item.requirementId;
+      if (typeof item.requirementType === 'string') normalizedMutable.requirementType = item.requirementType;
+      if (typeof item.category === 'string') normalizedMutable.category = item.category;
+      if (typeof item.field === 'string') normalizedMutable.field = item.field;
+      if ('details' in item) normalizedMutable.details = item.details;
+      if (typeof path === 'string') normalizedMutable.path = path;
+      if (typeof item.suggestion === 'string') normalizedMutable.suggestion = item.suggestion;
+      normalizedMutable.raw = item;
+
+      return normalized;
+    })
+    .filter((issue): issue is FrNfrValidationIssue => issue !== null);
+
+  const fallbackErrors = issues.filter(issue => issue.severity === 'error').length;
+  const fallbackWarnings = issues.filter(issue => issue.severity === 'warning').length;
+
+  const errors =
+    toNumber(summary?.errors) ?? toNumber(record.errorCount) ?? fallbackErrors;
+  const warnings =
+    toNumber(summary?.warnings) ?? toNumber(record.warningCount) ?? fallbackWarnings;
+
+  const isValid =
+    typeof record.isValid === 'boolean'
+      ? record.isValid
+      : typeof record.passed === 'boolean'
+        ? record.passed
+        : errors === 0;
+
+  return {
+    isValid,
+    qualityScore: toNumber(record.qualityScore),
+    totalRequirements: toNumber(summary?.totalRequirements),
+    totalIssues: toNumber(summary?.totalIssues) ?? issues.length,
+    errors,
+    warnings,
+    issues
+  };
+}
+
+function normalizeAutoFixSuggestions(raw: unknown): FrNfrAutoFixSuggestion[] {
+  if (!Array.isArray(raw)) return [];
+
+  return raw
+    .map(item => {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) return null;
+      const record = item as Record<string, unknown>;
+      const message =
+        typeof record.message === 'string' && record.message.trim().length > 0
+          ? record.message
+          : 'No message provided.';
+      const suggestion =
+        typeof record.suggestion === 'string' && record.suggestion.trim().length > 0
+          ? record.suggestion
+          : 'No suggestion provided.';
+
+      const normalized: FrNfrAutoFixSuggestion = { message, suggestion };
+      if (typeof record.requirementId === 'string') normalized.requirementId = record.requirementId;
+      if (typeof record.requirementType === 'string') normalized.requirementType = record.requirementType;
+      if (typeof record.category === 'string') normalized.category = record.category;
+
+      return normalized;
+    })
+    .filter((item): item is FrNfrAutoFixSuggestion => item !== null);
+}
 
 function loadPayload(): FrNfrStoredPayload | null {
   try {
@@ -20,10 +145,16 @@ function loadPayload(): FrNfrStoredPayload | null {
     const parsed = JSON.parse(raw) as unknown;
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
     const record = parsed as Record<string, unknown>;
-    if (record.success !== true || !record.content || typeof record.content !== 'object' || Array.isArray(record.content)) return null;
+    const validation = normalizeValidation(record.validation);
+    const autoFixSuggestions = normalizeAutoFixSuggestions(record.autoFixSuggestions);
     return {
-      success: true,
-      content: record.content as Record<string, unknown>
+      success: typeof record.success === 'boolean' ? record.success : false,
+      content:
+        record.content && typeof record.content === 'object' && !Array.isArray(record.content)
+          ? (record.content as Record<string, unknown>)
+          : undefined,
+      validation: validation ?? undefined,
+      autoFixSuggestions: autoFixSuggestions.length > 0 ? autoFixSuggestions : undefined
     };
   } catch {
     return null;
@@ -39,10 +170,13 @@ function getProjectNameFromContent(content: Record<string, unknown> | null): str
 export default function FrNfrResultsPage() {
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [payload, setPayload] = useState<FrNfrStoredPayload | null>(() => loadPayload());
   const content = payload?.content ?? null;
+  const validation = payload?.validation ?? null;
+  const autoFixSuggestions = payload?.autoFixSuggestions ?? [];
+  const hasContent = content !== null;
 
   const projectName = getProjectNameFromContent(content);
 
@@ -76,7 +210,7 @@ export default function FrNfrResultsPage() {
     });
   };
 
-  if (!payload || !content) {
+  if (!payload) {
     return (
       <div className="flex h-screen w-full overflow-hidden">
         <button
@@ -210,37 +344,48 @@ export default function FrNfrResultsPage() {
 
         <div className="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth">
           <div className="max-w-6xl mx-auto space-y-4 lg:space-y-6">
+
             <section className="bg-white dark:bg-[#1a1d2d] rounded-xl border border-[#e7e9f3] dark:border-[#2a2e3b] shadow-sm p-4 lg:p-6">
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">Project Summary</h2>
               <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">{projectName}</p>
             </section>
 
-            {orderedEntries.map(([sectionName, sectionValue]) => (
-              <section
-                key={sectionName}
-                className="bg-white dark:bg-[#1a1d2d] rounded-xl border border-[#e7e9f3] dark:border-[#2a2e3b] shadow-sm p-4 lg:p-6"
-              >
-                <h3 className="text-base lg:text-lg font-bold text-slate-900 dark:text-white mb-3">
-                  {toLabel(sectionName)}
-                </h3>
-                <div className="text-sm">
-                  <JsonRenderer
-                    value={sectionValue}
-                    keyPrefix={sectionName}
-                    depth={0}
-                    path={[sectionName]}
-                    onEdit={isEditing ? handleUpdate : undefined}
-                  />
-                </div>
+            <FrNfrValidationSummary validation={validation} />
+
+            {/*<FrNfrAutoFixSuggestions autoFixSuggestions={autoFixSuggestions} />*/}
+
+            {hasContent ? (
+              orderedEntries.map(([sectionName, sectionValue]) => (
+                <section
+                  key={sectionName}
+                  className="bg-white dark:bg-[#1a1d2d] rounded-xl border border-[#e7e9f3] dark:border-[#2a2e3b] shadow-sm p-4 lg:p-6"
+                >
+                  <h3 className="text-base lg:text-lg font-bold text-slate-900 dark:text-white mb-3">
+                    {toLabel(sectionName)}
+                  </h3>
+                  <div className="text-sm">
+                    <JsonRenderer
+                      value={sectionValue}
+                      keyPrefix={sectionName}
+                      depth={0}
+                      path={[sectionName]}
+                      onEdit={isEditing ? handleUpdate : undefined}
+                    />
+                  </div>
+                </section>
+              ))
+            ) : (
+              <section className="bg-white dark:bg-[#1a1d2d] rounded-xl border border-[#e7e9f3] dark:border-[#2a2e3b] shadow-sm p-4 lg:p-6">
+                <p className="text-slate-700 dark:text-slate-300">No content object was returned in the payload.</p>
               </section>
-            ))}
+            )}
           </div>
         </div>
       </main>
 
       <FrNfrChatSidebar
         isOpen={isChatOpen}
-        onClose={() => setIsChatOpen(false)}
+        onClose={() => {}}
         content={content ?? undefined}
         onContentUpdate={handleChatContentUpdate}
       />

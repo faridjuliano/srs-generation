@@ -3,12 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-
-type FrNfrGenerateResponse = {
-  success: boolean;
-  content?: Record<string, unknown>;
-  error?: string;
-};
+import type { FrNfrGenerateResponse, FrNfrStoredPayload } from '@/lib/frNfrTypes';
 
 export default function NewFrNfrPage() {
   const router = useRouter();
@@ -47,7 +42,12 @@ export default function NewFrNfrPage() {
 		return;
 	  }
 
-	  const storedPayload = { success: true, content: data.content };
+	  const storedPayload: FrNfrStoredPayload = {
+		success: data.success,
+		content: data.content,
+		validation: data.validation,
+		autoFixSuggestions: data.autoFixSuggestions
+	  };
 	  sessionStorage.setItem('fr-nfr-generated', JSON.stringify(storedPayload));
 	  router.push('/fr-nfr-results');
 	} catch (err) {
@@ -91,7 +91,7 @@ export default function NewFrNfrPage() {
 			<div className="mb-6">
 			  <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Generate FR & NFR</h2>
 			  <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
-				Prompt Gemini to generate only Functional Requirements and Non-Functional Requirements.
+				Prompt Ai Model (gemini) to generate Functional Requirements and Non-Functional Requirements using the ISO/IEC/IEEE 29148:2018 srs standard.
 			  </p>
 			</div>
 
