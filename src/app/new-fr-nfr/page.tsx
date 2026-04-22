@@ -11,6 +11,7 @@ export default function NewFrNfrPage() {
 
   const [projectName, setProjectName] = useState('Inventory Management System');
   const [projectVision, setProjectVision] = useState('A web application for tracking stock levels and low inventory alerts.');
+  const [validatorConfig, setValidatorConfig] = useState<'rule-based' | 'gemini' | 'no-validation'>('rule-based');
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,7 +33,7 @@ export default function NewFrNfrPage() {
 	  const response = await fetch(`${backendBaseUrl}/api/srs/generate-fr-nfr`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ projectName, projectVision })
+		body: JSON.stringify({ projectName, projectVision, validatorConfig })
 	  });
 
 	  const data = (await response.json()) as FrNfrGenerateResponse;
@@ -118,6 +119,22 @@ export default function NewFrNfrPage() {
 				  The backend will generate FR and NFR only from this project description.
 				</p>
 			  </div>
+
+				  <div>
+					<label className="block text-sm font-semibold text-slate-900 dark:text-white mb-2">Validator Configuration</label>
+					<select
+					  value={validatorConfig}
+					  onChange={(e) => setValidatorConfig(e.target.value as 'rule-based' | 'gemini' | 'no-validation')}
+					  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#202434] px-4 py-3 text-sm text-slate-900 dark:text-white focus:border-primary focus:ring-2 focus:ring-primary/20"
+					>
+					  <option value="rule-based">Rule-based Mechanism</option>
+					  <option value="gemini">Gemini LLM</option>
+            <option value="no-validation">No Validation</option>
+					</select>
+					<p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+						Choose how the backend validator should evaluate generated requirements.
+					</p>
+				  </div>
 
 			  {error && (
 				<div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-4 text-sm text-red-700 dark:text-red-300">
