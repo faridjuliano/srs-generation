@@ -7,6 +7,7 @@ import FrNfrAutoFixSuggestions from '@/components/fr-nfr/FrNfrAutoFixSuggestions
 import FrNfrChatSidebar from '@/components/fr-nfr/FrNfrChatSidebar';
 import FrNfrValidationSummary from '@/components/fr-nfr/FrNfrValidationSummary';
 import { JsonRenderer } from '@/components/srs-results-2/JsonRenderer';
+import { exportJsonSectionsToDocx } from '@/lib/docxExport';
 import type {
   FrNfrAutoFixSuggestion,
   FrNfrValidation,
@@ -171,6 +172,7 @@ export default function FrNfrDetailedResultPage() {
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [exportStatus, setExportStatus] = useState<'idle' | 'exporting' | 'done'>('idle');
   const [payload, setPayload] = useState<NfNfrDetailedStoredPayload | null>(() => loadPayload());
 
   const content = payload?.content ?? null;
@@ -208,6 +210,39 @@ export default function FrNfrDetailedResultPage() {
         content: updatedContent
       };
     });
+  };
+
+  const handleExportDocx = async () => {
+    if (!content) return;
+
+    try {
+      setExportStatus('exporting');
+      const date = new Date().toISOString().split('T')[0];
+      const projectNameForFile = (projectName || 'Detailed_FR_NFR_Document')
+        .replace(/[^a-zA-Z0-9-_]/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .toLowerCase();
+      const filename = `${projectNameForFile || 'detailed_fr_nfr_document'}_${date}.docx`;
+
+      await exportJsonSectionsToDocx({
+        filename,
+        title: projectName,
+        subtitle: 'Detailed FR/NFR Export',
+        sections: orderedEntries.map(([sectionName, sectionValue]) => ({
+          title: toLabel(sectionName),
+          value: sectionValue
+        }))
+      });
+
+      setExportStatus('done');
+      setTimeout(() => setExportStatus('idle'), 2000);
+    } catch (error) {
+      console.error('Failed to export DOCX:', error);
+      setExportStatus('idle');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to export DOCX: ${errorMessage}\n\nPlease try again.`);
+    }
   };
 
   if (!payload) {
@@ -253,9 +288,22 @@ export default function FrNfrDetailedResultPage() {
             <span className="mx-2 hidden sm:inline">/</span>
             <span className="text-slate-900 dark:text-white font-medium">Detailed Result</span>
           </nav>
-          <Link href="/new-fr-nfr-detailed" className="text-sm text-primary hover:underline">
-            Generate again
-          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => void handleExportDocx()}
+              disabled={!content || exportStatus === 'exporting'}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-transparent px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-lg">
+                {exportStatus === 'exporting' ? 'progress_activity' : 'download'}
+              </span>
+              <span>{exportStatus === 'exporting' ? 'Exporting...' : 'Export DOCX'}</span>
+            </button>
+            <Link href="/new-fr-nfr-detailed" className="text-sm text-primary hover:underline">
+              Generate again
+            </Link>
+          </div>
         </header>
 
           <div className="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth">
@@ -334,6 +382,17 @@ export default function FrNfrDetailedResultPage() {
               }`}
             >
               {isEditing ? 'Done Editing' : 'Edit'}
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleExportDocx()}
+              disabled={!content || exportStatus === 'exporting'}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-transparent px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-lg">
+                {exportStatus === 'exporting' ? 'progress_activity' : 'download'}
+              </span>
+              <span>{exportStatus === 'exporting' ? 'Exporting...' : 'Export DOCX'}</span>
             </button>
             <Link href="/new-fr-nfr-detailed" className="text-sm text-primary hover:underline">
               Generate again

@@ -144,7 +144,6 @@ export default function FrNfrValidationSummary({ validation }: FrNfrValidationSu
       <div className="space-y-3">
         <div>
           <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Validation Issues</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">validation.issues</p>
         </div>
         {issues.length === 0 ? (
           <p className="text-sm text-slate-600 dark:text-slate-300">

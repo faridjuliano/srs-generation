@@ -1,5 +1,6 @@
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
+import type { JsonValue } from './srsTypes';
 
 interface EditableContent {
   title?: string;
@@ -94,7 +95,141 @@ interface DocxExportOptions {
   formData?: FormData;
 }
 
+export interface JsonDocxSection {
+  title: string;
+  value: JsonValue;
+}
+
+export interface JsonDocxExportOptions {
+  filename?: string;
+  title: string;
+  subtitle?: string;
+  sections: JsonDocxSection[];
+}
+
 type HeadingLevelValue = (typeof HeadingLevel)[keyof typeof HeadingLevel];
+
+const getHeadingLevel = (depth: number): HeadingLevelValue => {
+  if (depth <= 1) return HeadingLevel.HEADING_1;
+  if (depth === 2) return HeadingLevel.HEADING_2;
+  if (depth === 3) return HeadingLevel.HEADING_3;
+  return HeadingLevel.HEADING_4;
+};
+
+const isPlainObject = (value: unknown): value is Record<string, JsonValue> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const appendJsonValue = (
+  sections: Paragraph[],
+  value: JsonValue,
+  depth: number,
+  pathLabel?: string
+) => {
+  if (value === null || value === undefined) {
+    sections.push(new Paragraph({ text: 'N/A', spacing: { after: 100 } }));
+    return;
+  }
+
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    sections.push(new Paragraph({ text: String(value), spacing: { after: 100 } }));
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      sections.push(new Paragraph({ text: 'None', spacing: { after: 100 } }));
+      return;
+    }
+
+    const allPrimitive = value.every(
+      item => item === null || ['string', 'number', 'boolean'].includes(typeof item)
+    );
+
+    if (allPrimitive) {
+      value.forEach(item => {
+        sections.push(new Paragraph({ text: `• ${String(item)}`, spacing: { after: 50 } }));
+      });
+      return;
+    }
+
+    value.forEach((item, index) => {
+      sections.push(
+        new Paragraph({
+          text: `${pathLabel || 'Item'} ${index + 1}`,
+          heading: getHeadingLevel(depth),
+          spacing: { before: 120, after: 80 }
+        })
+      );
+      appendJsonValue(sections, item, depth + 1);
+    });
+    return;
+  }
+
+  if (isPlainObject(value)) {
+    const entries = Object.entries(value);
+    if (entries.length === 0) {
+      sections.push(new Paragraph({ text: 'None', spacing: { after: 100 } }));
+      return;
+    }
+
+    entries.forEach(([key, childValue]) => {
+      sections.push(
+        new Paragraph({
+          text: key.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' '),
+          heading: getHeadingLevel(depth),
+          spacing: { before: 120, after: 80 }
+        })
+      );
+      appendJsonValue(sections, childValue, depth + 1, key);
+    });
+  }
+};
+
+export const exportJsonSectionsToDocx = async (options: JsonDocxExportOptions) => {
+  const { filename = 'document.docx', title, subtitle, sections: docxSections } = options;
+
+  const sections: Paragraph[] = [
+    new Paragraph({
+      text: title,
+      heading: HeadingLevel.TITLE,
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 300 }
+    })
+  ];
+
+  if (subtitle) {
+    sections.push(
+      new Paragraph({
+        text: subtitle,
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 250 }
+      })
+    );
+  }
+
+  docxSections.forEach(({ title: sectionTitle, value }) => {
+    sections.push(
+      new Paragraph({
+        text: sectionTitle,
+        heading: HeadingLevel.HEADING_1,
+        spacing: { before: 240, after: 120 }
+      })
+    );
+    appendJsonValue(sections, value, 2, sectionTitle);
+  });
+
+  const doc = new Document({
+    sections: [
+      {
+        properties: {},
+        children: sections
+      }
+    ]
+  });
+
+  const blob = await Packer.toBlob(doc);
+  saveAs(blob, filename);
+};
 
 export const exportSRSToDocx = async (options: DocxExportOptions) => {
   try {
