@@ -49,7 +49,7 @@ export default function FrNfrChatSidebar({
       const body = {
         content: content ?? {},
         instruction: input,
-        history: [...messages, userMessage].map(msg => ({ role: msg.role, content: msg.content }))
+        validationModel: 'rule-based'
       };
 
       const response = await fetch('/api/srs/reprompt-fr-nfr', {
@@ -106,19 +106,11 @@ export default function FrNfrChatSidebar({
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <div className="h-16 flex items-center justify-between px-5 border-b border-[#e7e9f3] dark:border-[#2a2e3b] bg-slate-50/50 dark:bg-[#1a1d2d]">
+        <div className="h-16 flex items-center gap-2 px-5 border-b border-[#e7e9f3] dark:border-[#2a2e3b] bg-slate-50/50 dark:bg-[#1a1d2d]">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-primary">smart_toy</span>
             <h2 className="font-bold text-slate-900 dark:text-white">FR/NFR Assistant</h2>
           </div>
-          {/*<button*/}
-          {/*  type="button"*/}
-          {/*  onClick={onClose}*/}
-          {/*  className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"*/}
-          {/*  aria-label="Close chat"*/}
-          {/*>*/}
-          {/*  <span className="material-symbols-outlined">close</span>*/}
-          {/*</button>*/}
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -199,13 +191,7 @@ export default function FrNfrChatSidebar({
         </div>
       </aside>
 
-      {isOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-10"
-          onClick={onClose}
-          aria-hidden="true"
-        />
-      )}
+      {/*Overlay removed - chat is always open*/}
     </>
   );
 }

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import FrNfrAutoFixSuggestions from '@/components/fr-nfr/FrNfrAutoFixSuggestions';
+import FrNfrChatSidebar from '@/components/fr-nfr/FrNfrChatSidebar';
 import FrNfrValidationSummary from '@/components/fr-nfr/FrNfrValidationSummary';
 import { JsonRenderer } from '@/components/srs-results-2/JsonRenderer';
 import type {
@@ -199,6 +200,16 @@ export default function FrNfrDetailedResultPage() {
     });
   };
 
+  const handleChatContentUpdate = (updatedContent: Record<string, unknown>) => {
+    setPayload(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        content: updatedContent
+      };
+    });
+  };
+
   if (!payload) {
     return (
       <div className="flex h-screen w-full overflow-hidden">
@@ -236,16 +247,16 @@ export default function FrNfrDetailedResultPage() {
         </aside>
 
         <main className="flex flex-col flex-1 h-full min-w-0 bg-background-light dark:bg-background-dark overflow-hidden relative">
-          <header className="h-16 flex items-center justify-between px-4 lg:px-8 bg-white dark:bg-[#161926] border-b border-[#e7e9f3] dark:border-[#2a2e3b] flex-shrink-0 z-10">
-            <nav className="flex text-xs lg:text-sm text-slate-500 dark:text-slate-400 ml-12 lg:ml-0">
-              <a className="hover:text-primary hidden sm:inline" href="#">Projects</a>
-              <span className="mx-2 hidden sm:inline">/</span>
-              <span className="text-slate-900 dark:text-white font-medium">Detailed Result</span>
-            </nav>
-            <Link href="/new-fr-nfr-detailed" className="text-sm text-primary hover:underline">
-              Generate again
-            </Link>
-          </header>
+        <header className="h-16 flex items-center justify-between px-4 lg:px-8 bg-white dark:bg-[#161926] border-b border-[#e7e9f3] dark:border-[#2a2e3b] flex-shrink-0 z-10">
+          <nav className="flex text-xs lg:text-sm text-slate-500 dark:text-slate-400 ml-12 lg:ml-0">
+            <a className="hover:text-primary hidden sm:inline" href="#">Projects</a>
+            <span className="mx-2 hidden sm:inline">/</span>
+            <span className="text-slate-900 dark:text-white font-medium">Detailed Result</span>
+          </nav>
+          <Link href="/new-fr-nfr-detailed" className="text-sm text-primary hover:underline">
+            Generate again
+          </Link>
+        </header>
 
           <div className="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth">
             <div className="max-w-3xl mx-auto bg-white dark:bg-[#1a1d2d] rounded-xl border border-[#e7e9f3] dark:border-[#2a2e3b] shadow-sm p-6">
@@ -259,6 +270,13 @@ export default function FrNfrDetailedResultPage() {
             </div>
           </div>
         </main>
+
+        <FrNfrChatSidebar
+          isOpen={true}
+          onClose={() => {}}
+          content={undefined}
+          onContentUpdate={handleChatContentUpdate}
+        />
       </div>
     );
   }
@@ -305,7 +323,7 @@ export default function FrNfrDetailedResultPage() {
             <span className="mx-2 hidden sm:inline">/</span>
             <span className="text-slate-900 dark:text-white font-medium">Detailed Result</span>
           </nav>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 lg:gap-3">
             <button
               type="button"
               onClick={() => setIsEditing(prev => !prev)}
@@ -361,6 +379,13 @@ export default function FrNfrDetailedResultPage() {
           </div>
         </div>
       </main>
+
+      <FrNfrChatSidebar
+        isOpen={true}
+        onClose={() => {}}
+        content={content ?? undefined}
+        onContentUpdate={handleChatContentUpdate}
+      />
     </div>
   );
 }
