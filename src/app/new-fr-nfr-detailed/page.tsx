@@ -157,7 +157,7 @@ export default function NewNfNfrDetailedPage() {
             className="w-full inline-flex items-center gap-2 bg-primary text-white px-3 py-2.5 rounded-lg shadow-md shadow-blue-500/20 hover:bg-blue-700 transition-colors"
           >
             <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add_circle</span>
-            <span className="text-sm font-bold">Generate Detailed NF/NFR</span>
+            <span className="text-sm font-bold">Generate Functional and Non-Functional Requirement</span>
           </Link>
         </div>
       </aside>
@@ -165,16 +165,16 @@ export default function NewNfNfrDetailedPage() {
       <main className="flex flex-col flex-1 min-w-0 bg-background-light dark:bg-background-dark">
         <header className="h-16 flex items-center justify-between px-4 lg:px-8 bg-white dark:bg-[#161926] border-b border-[#e7e9f3] dark:border-[#2a2e3b]">
           <nav className="flex text-xs lg:text-sm text-slate-500 dark:text-slate-400 truncate">
-            <span className="text-slate-900 dark:text-white font-medium text-xs lg:text-sm">Detailed NF/NFR Generator</span>
+            <span className="text-slate-900 dark:text-white font-medium text-xs lg:text-sm">Functional and Non-Functional Requirement Generator</span>
           </nav>
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 lg:p-8">
           <div className="max-w-4xl mx-auto bg-white dark:bg-[#1a1d2d] rounded-xl border border-[#e7e9f3] dark:border-[#2a2e3b] shadow-sm p-4 lg:p-8">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Generate Detailed NF/NFR</h2>
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Generate Functional and Non-Functional Requirement</h2>
               <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
-                Sample/example generator for a hospital booking system using the backend endpoint.
+                Use Gemini to generate Functional and Non-Functional Requirement content for SRS with ISO/IEC/IEEE 29148:2018 standards.
               </p>
             </div>
 

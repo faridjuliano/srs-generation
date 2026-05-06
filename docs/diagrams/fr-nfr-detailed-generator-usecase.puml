@@ -1,0 +1,54 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam ArrowColor #2D3748
+skinparam ActorBorderColor #2B6CB0
+skinparam ActorFontColor #1A202C
+skinparam usecaseBorderColor #4A5568
+skinparam usecaseBackgroundColor #F8FAFC
+
+actor "User" as User
+actor "Backend API" as Backend
+actor "Session Storage" as Storage
+
+rectangle "FR/NFR Detailed Generator" {
+  usecase "Open detailed generator" as UCOpen
+  usecase "Enter project name\nand description" as UCInput
+  usecase "Add / remove features" as UCFeatures
+  usecase "Add / remove constraints" as UCConstraints
+  usecase "Add / remove assumptions" as UCAssumptions
+  usecase "Submit generation request" as UCSubmit
+  usecase "Validate required fields" as UCValidate
+  usecase "Generate detailed FR/NFR payload" as UCGenerate
+  usecase "Persist generated payload" as UCPersist
+  usecase "View detailed results" as UCView
+  usecase "Edit generated JSON" as UCEdit
+  usecase "Reprompt with chat assistant" as UCReprompt
+  usecase "Export result to DOCX" as UCExport
+}
+
+User --> UCOpen
+User --> UCInput
+User --> UCFeatures
+User --> UCConstraints
+User --> UCAssumptions
+User --> UCSubmit
+User --> UCView
+User --> UCEdit
+User --> UCReprompt
+User --> UCExport
+
+UCSubmit --> UCValidate : <<include>>
+UCSubmit --> UCGenerate : <<include>>
+UCGenerate --> Backend
+UCGenerate --> UCPersist : <<include>>
+UCPersist --> Storage
+UCView --> Storage
+UCEdit --> UCView : <<extend>>
+UCReprompt --> Backend
+UCExport --> UCView : <<extend>>
+
+@enduml
+

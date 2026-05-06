@@ -172,6 +172,7 @@ export default function FrNfrDetailedResultPage() {
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [openSection, setOpenSection] = useState<string | null>(null);
   const [exportStatus, setExportStatus] = useState<'idle' | 'exporting' | 'done'>('idle');
   const [payload, setPayload] = useState<NfNfrDetailedStoredPayload | null>(() => loadPayload());
 
@@ -186,6 +187,14 @@ export default function FrNfrDetailedResultPage() {
     if (!content) return [] as Array<[string, JsonValue]>;
     return Object.entries(content as Record<string, JsonValue>).sort(([a], [b]) => sectionOrder(a, b));
   }, [content]);
+
+  useEffect(() => {
+    if (!content) return;
+    setOpenSection(prev => {
+      if (prev && orderedEntries.some(([sectionName]) => sectionName === prev)) return prev;
+      return orderedEntries[0]?.[0] ?? null;
+    });
+  }, [content, orderedEntries]);
 
   useEffect(() => {
     if (!payload) return;
@@ -404,7 +413,7 @@ export default function FrNfrDetailedResultPage() {
           <div className="max-w-6xl mx-auto space-y-4 lg:space-y-6">
             <section className="bg-white dark:bg-[#1a1d2d] rounded-xl border border-[#e7e9f3] dark:border-[#2a2e3b] shadow-sm p-4 lg:p-6">
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">Project Summary</h2>
-              <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">{projectName}</p>
+              <p className="text-lg font-semibold text-slate-600 dark:text-slate-300 mt-1">Project Name: {projectName}</p>
             </section>
 
             <FrNfrValidationSummary validation={validation} />
@@ -416,18 +425,30 @@ export default function FrNfrDetailedResultPage() {
                   key={sectionName}
                   className="bg-white dark:bg-[#1a1d2d] rounded-xl border border-[#e7e9f3] dark:border-[#2a2e3b] shadow-sm p-4 lg:p-6"
                 >
-                  <h3 className="text-base lg:text-lg font-bold text-slate-900 dark:text-white mb-3">
-                    {toLabel(sectionName)}
-                  </h3>
-                  <div className="text-sm">
-                    <JsonRenderer
-                      value={sectionValue}
-                      keyPrefix={sectionName}
-                      depth={0}
-                      path={[sectionName]}
-                      onEdit={isEditing ? handleUpdate : undefined}
-                    />
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setOpenSection(prev => (prev === sectionName ? null : sectionName))}
+                    className="flex w-full items-center justify-between gap-3 text-left"
+                  >
+                    <h3 className="text-base lg:text-lg font-bold text-slate-900 dark:text-white">
+                      {toLabel(sectionName)}
+                    </h3>
+                    <span className="material-symbols-outlined text-slate-500 dark:text-slate-400">
+                      {openSection === sectionName ? 'expand_less' : 'expand_more'}
+                    </span>
+                  </button>
+
+                  {openSection === sectionName && (
+                    <div className="mt-3 text-sm">
+                      <JsonRenderer
+                        value={sectionValue}
+                        keyPrefix={sectionName}
+                        depth={0}
+                        path={[sectionName]}
+                        onEdit={isEditing ? handleUpdate : undefined}
+                      />
+                    </div>
+                  )}
                 </section>
               ))
             ) : (

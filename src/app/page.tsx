@@ -10,6 +10,41 @@ interface RecentProject {
   status?: 'Completed' | 'In Progress';
 }
 
+const generationRoutes = [
+  {
+    href: '/new-srs',
+    title: 'New SRS Project',
+    description: 'Start from scratch with AI-assisted requirement extraction',
+    icon: 'auto_awesome',
+    accent: 'from-blue-600 to-blue-700',
+    iconColor: 'text-blue-100'
+  },
+  {
+    href: '/new-srs-2',
+    title: 'New SRS Project v2',
+    description: 'Generate a second SRS flow with a refreshed structure',
+    icon: 'description',
+    accent: 'from-indigo-600 to-indigo-700',
+    iconColor: 'text-indigo-100'
+  },
+  {
+    href: '/new-fr-nfr',
+    title: 'New FR/NFR Project',
+    description: 'Build functional and non-functional requirements from prompts',
+    icon: 'rule',
+    accent: 'from-emerald-600 to-emerald-700',
+    iconColor: 'text-emerald-100'
+  },
+  {
+    href: '/new-fr-nfr-detailed',
+    title: 'New Detailed FR/NFR',
+    description: 'Create a detailed FR/NFR package from a simplified payload',
+    icon: 'schema',
+    accent: 'from-violet-600 to-violet-700',
+    iconColor: 'text-violet-100'
+  }
+];
+
 export default function Home() {
   const [recentProjects] = useState<RecentProject[]>(() => {
     try {
@@ -54,41 +89,27 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          {/* New SRS Project Card */}
-          <Link href="/new-srs" className="group">
-            <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg p-8 text-white h-full hover:shadow-lg transition-shadow cursor-pointer">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="material-symbols-outlined text-3xl">auto_awesome</span>
-              </div>
-              <h3 className="text-2xl font-bold mb-2">New SRS Project</h3>
-              <p className="text-blue-100">
-                Start from scratch with AI-assisted requirement extraction
-              </p>
-            </div>
-          </Link>
-
-          {/* Recent Projects Card */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-8 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="material-symbols-outlined text-2xl text-blue-600 dark:text-blue-400">history</span>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Recent Projects</h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              Resume or review your previously generated SRS documents.
-            </p>
+        {/* Generation Routes */}
+        <div className="mb-12">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Start a new generation</h3>
+            <span className="text-sm text-gray-500 dark:text-gray-400">Choose a workflow</span>
           </div>
 
-          {/* Browse Templates Card */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-8 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="material-symbols-outlined text-2xl text-blue-600 dark:text-blue-400">folder_open</span>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Browse Templates</h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              Pick a pre-built template for your domain and get started faster
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {generationRoutes.map(route => (
+              <Link key={route.href} href={route.href} className="group w-full">
+                <div className={`bg-gradient-to-br ${route.accent} rounded-lg p-8  h-full hover:shadow-xl transition-all duration-200 cursor-pointer border border-white/10 ring-1 ring-black/5 dark:ring-white/10 shadow-md`}>
+                  <div className={`flex items-center gap-3 mb-4 ${route.iconColor}`}>
+                    <span className="material-symbols-outlined text-3xl">{route.icon}</span>
+                  </div>
+                  <h3 className="text-2xl font-bold mb-2">{route.title}</h3>
+                  <p className="text-white/85">
+                    {route.description}
+                  </p>
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
 
@@ -96,7 +117,7 @@ export default function Home() {
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white">Recent Activity</h3>
-            <Link href="#" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">
+            <Link href="/srs-results" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">
               View all
             </Link>
           </div>
