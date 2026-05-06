@@ -21,6 +21,8 @@ export type NfNfrDetailedStoredPayload = {
 };
 
 export type NfNfrDetailedGenerateRequest = {
+  userId: string;
+  projectId: string;
   project_name: string;
   project_description: string;
   features: NfNfrDetailedFeature[];
