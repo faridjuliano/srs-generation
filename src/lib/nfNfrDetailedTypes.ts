@@ -11,6 +11,8 @@ export type NfNfrDetailedGenerateResponse = {
   validation?: FrNfrValidation;
   autoFixSuggestions?: FrNfrAutoFixSuggestion[];
   error?: string;
+  userId: string;
+  projectId: string;
 };
 
 export type NfNfrDetailedStoredPayload = {

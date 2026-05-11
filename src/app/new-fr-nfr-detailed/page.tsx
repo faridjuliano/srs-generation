@@ -22,7 +22,7 @@ export default function NewNfNfrDetailedPage() {
   const backendBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
   const [nfNfrDetailedUserId, setNfNfrDetailedUserId] = useState('user-001');
-  const [nfNfrDetailedProjectId, setNfNfrDetailedProjectId] = useState('project-001');
+  const [nfNfrDetailedProjectId, setNfNfrDetailedProjectId] = useState('');
   const [nfNfrDetailedProjectName, setNfNfrDetailedProjectName] = useState('Hospital Booking System');
   const [nfNfrDetailedProjectDescription, setNfNfrDetailedProjectDescription] = useState(
     'A web-based system for booking, rescheduling, and cancelling doctor appointments.'
@@ -52,9 +52,8 @@ export default function NewNfNfrDetailedPage() {
   const [showRequiredWarnings, setShowRequiredWarnings] = useState(false);
 
   const isUserIdMissing = nfNfrDetailedUserId.trim().length === 0;
-  const isProjectIdMissing = nfNfrDetailedProjectId.trim().length === 0;
   const isUserIdInvalid = hasWhitespace(nfNfrDetailedUserId.trim());
-  const isProjectIdInvalid = hasWhitespace(nfNfrDetailedProjectId.trim());
+  const isProjectIdInvalid = nfNfrDetailedProjectId.trim().length > 0 && hasWhitespace(nfNfrDetailedProjectId.trim());
   const isProjectNameMissing = nfNfrDetailedProjectName.trim().length === 0;
   const isProjectDescriptionMissing = nfNfrDetailedProjectDescription.trim().length === 0;
 
@@ -62,8 +61,7 @@ export default function NewNfNfrDetailedPage() {
     return (
       nfNfrDetailedUserId.trim().length > 0 &&
       !hasWhitespace(nfNfrDetailedUserId.trim()) &&
-      nfNfrDetailedProjectId.trim().length > 0 &&
-      !hasWhitespace(nfNfrDetailedProjectId.trim()) &&
+      !isProjectIdInvalid &&
       nfNfrDetailedProjectName.trim().length > 0 &&
       nfNfrDetailedProjectDescription.trim().length > 0
     );
@@ -71,7 +69,8 @@ export default function NewNfNfrDetailedPage() {
     nfNfrDetailedProjectDescription,
     nfNfrDetailedProjectId,
     nfNfrDetailedProjectName,
-    nfNfrDetailedUserId
+    nfNfrDetailedUserId,
+    isProjectIdInvalid
   ]);
 
   const updateNfNfrDetailedFeature = (
@@ -92,7 +91,6 @@ export default function NewNfNfrDetailedPage() {
     if (
       isUserIdMissing ||
       isUserIdInvalid ||
-      isProjectIdMissing ||
       isProjectIdInvalid ||
       isProjectNameMissing ||
       isProjectDescriptionMissing
@@ -123,28 +121,31 @@ export default function NewNfNfrDetailedPage() {
         assumptions: nfNfrDetailedAssumptions.map(item => item.trim()).filter(Boolean)
       };
 
-      const response = await fetch(`${backendBaseUrl}/api/srs/nf-nfr-detailed`, {
+      const response = await fetch(`${backendBaseUrl}/api/srs/fr-nfr-detailed`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
-              const data = (await response.json()) as NfNfrDetailedGenerateResponse;
+      const data = (await response.json()) as NfNfrDetailedGenerateResponse;
 
-      if (!response.ok || !data.success || !data.content) {
-                setNfNfrDetailedError(data.error || 'Failed to generate the detailed NF/NFR content.');
+      /*
+      console.log(data.success, 'data')
+      if (!response.ok || !data.success) {
+        setNfNfrDetailedError(data.error || 'Failed to generate the detailed NF/NFR content.');
         return;
       }
+       */
 
       router.push(
         `/fr-nfr-detailed-result/${encodeURIComponent(nfNfrDetailedUserId.trim())}/${encodeURIComponent(
-          nfNfrDetailedProjectId.trim()
+          data.projectId as string
         )}`
       );
     } catch (err) {
-              setNfNfrDetailedError(err instanceof Error ? err.message : 'An unexpected error occurred.');
+      setNfNfrDetailedError(err instanceof Error ? err.message : 'An unexpected error occurred.');
     } finally {
-              setIsGeneratingNfNfrDetailed(false);
+      setIsGeneratingNfNfrDetailed(false);
     }
   };
 
@@ -225,7 +226,7 @@ export default function NewNfNfrDetailedPage() {
 
                 <div>
                   <label className="block text-sm font-semibold text-slate-900 dark:text-white mb-2">
-                    Project ID <span className="text-rose-600">*</span>
+                    Project ID
                   </label>
                   <input
                     type="text"
@@ -234,10 +235,7 @@ export default function NewNfNfrDetailedPage() {
                     className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#202434] px-4 py-3 text-sm text-slate-900 dark:text-white focus:border-primary focus:ring-2 focus:ring-primary/20"
                     placeholder="project-001"
                   />
-                  {showRequiredWarnings && isProjectIdMissing && (
-                    <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">Project ID is required.</p>
-                  )}
-                  {showRequiredWarnings && isProjectIdInvalid && !isProjectIdMissing && (
+                  {showRequiredWarnings && isProjectIdInvalid && (
                     <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">Project ID cannot contain spaces.</p>
                   )}
                 </div>
