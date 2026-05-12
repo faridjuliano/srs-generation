@@ -8,13 +8,17 @@ interface FrNfrChatSidebarProps {
   onClose: () => void;
   content?: Record<string, unknown>;
   onContentUpdate?: (updated: Record<string, unknown>) => void;
+  userId?: string;
+  projectId?: string;
 }
 
 export default function FrNfrChatSidebar({
   isOpen,
   onClose,
   content,
-  onContentUpdate
+  onContentUpdate,
+  userId,
+  projectId
 }: FrNfrChatSidebarProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -47,15 +51,16 @@ export default function FrNfrChatSidebar({
 
     try {
       const body = {
-        content: content ?? {},
+        userId,
+        projectId,
         instruction: input,
         validationModel: 'rule-based'
       };
 
-      const response = await fetch('/api/srs/reprompt-fr-nfr', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/srs/reprompt-fr-nfr-v2/${userId}/${projectId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        // body: JSON.stringify(body)
       });
 
       if (!response.ok) {

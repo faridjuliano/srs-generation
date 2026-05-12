@@ -15,6 +15,7 @@ import type {
 } from '@/lib/frNfrTypes';
 import { sectionOrder, toLabel, updateJsonAtPath } from '@/lib/srsUtils';
 import type { JsonPath, JsonValue } from '@/lib/srsTypes';
+import {warnings} from "cytoscape";
 
 function toNumber(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
@@ -102,6 +103,7 @@ function normalizeValidation(raw: unknown): FrNfrValidation | null {
         : errors === 0;
 
   return {
+    summary: {errors: 0, totalIssues: 0, totalRequirements: 0, warnings: 0},
     isValid,
     qualityScore: toNumber(record.qualityScore),
     totalRequirements: toNumber(summary?.totalRequirements),

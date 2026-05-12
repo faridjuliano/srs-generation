@@ -300,12 +300,14 @@ export default function FrNfrDetailedResultPage() {
           </div>
         </main>
 
-        <FrNfrChatSidebar
-          isOpen={true}
-          onClose={() => {}}
-          content={undefined}
-          onContentUpdate={handleChatContentUpdate}
-        />
+      <FrNfrChatSidebar
+        isOpen={true}
+        onClose={() => {}}
+        content={undefined}
+        onContentUpdate={handleChatContentUpdate}
+        userId={userId}
+        projectId={projectId}
+      />
       </div>
     );
   }
@@ -447,6 +449,8 @@ export default function FrNfrDetailedResultPage() {
         onClose={() => {}}
         content={content ?? undefined}
         onContentUpdate={handleChatContentUpdate}
+        userId={userId}
+        projectId={projectId}
       />
     </div>
   );

@@ -198,7 +198,7 @@ export default function NewNfNfrDetailedPage() {
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Generate Functional and Non-Functional Requirement</h2>
               <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
-                Use Gemini to generate Functional and Non-Functional Requirement content for SRS with ISO/IEC/IEEE 29148:2018 standards.
+                Use Gemini to generate SRS Functional and Non-Functional Requirement content aligned with ISO/IEC/IEEE 29148:2018 standards.
               </p>
             </div>
 
