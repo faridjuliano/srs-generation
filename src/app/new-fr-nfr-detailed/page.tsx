@@ -129,13 +129,12 @@ export default function NewNfNfrDetailedPage() {
 
       const data = (await response.json()) as NfNfrDetailedGenerateResponse;
 
-      /*
-      console.log(data.success, 'data')
+
+      console.log(data,response, 'data')
       if (!response.ok || !data.success) {
         setNfNfrDetailedError(data.error || 'Failed to generate the detailed NF/NFR content.');
         return;
       }
-       */
 
       router.push(
         `/fr-nfr-detailed-result/${encodeURIComponent(nfNfrDetailedUserId.trim())}/${encodeURIComponent(
@@ -380,7 +379,7 @@ export default function NewNfNfrDetailedPage() {
                   className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isGeneratingNfNfrDetailed && <span className="material-symbols-outlined animate-spin text-base">refresh</span>}
-                  {isGeneratingNfNfrDetailed ? 'Generating...' : 'Generate Detailed NF/NFR'}
+                  {isGeneratingNfNfrDetailed ? 'Generating...' : 'Generate FR & NFR'}
                 </button>
               </div>
             </div>

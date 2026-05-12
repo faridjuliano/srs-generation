@@ -5,11 +5,19 @@ export type NfNfrDetailedFeature = {
   description: string;
 };
 
+export type NfNfrDetailedPrediction = {
+  id?: string;
+  statement?: string;
+  confidence?: number;
+  smell_boolean?: number | boolean;
+};
+
 export type NfNfrDetailedGenerateResponse = {
   success: boolean;
   content?: Record<string, unknown>;
   validation?: FrNfrValidation;
   autoFixSuggestions?: FrNfrAutoFixSuggestion[];
+  prediction?: NfNfrDetailedPrediction[];
   error?: string;
   userId: string;
   projectId: string;
@@ -20,6 +28,7 @@ export type NfNfrDetailedStoredPayload = {
   content?: Record<string, unknown>;
   validation?: FrNfrValidation;
   autoFixSuggestions?: FrNfrAutoFixSuggestion[];
+  prediction?: NfNfrDetailedPrediction[];
 };
 
 export type NfNfrDetailedGenerateRequest = {

@@ -3,14 +3,33 @@
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import FrNfrAutoFixSuggestions from '@/components/fr-nfr/FrNfrAutoFixSuggestions';
 import FrNfrChatSidebar from '@/components/fr-nfr/FrNfrChatSidebar';
+import RequirementSmellSection from '@/components/fr-nfr/RequirementSmellSection';
 import FrNfrValidationSummary from '@/components/fr-nfr/FrNfrValidationSummary';
 import { JsonRenderer } from '@/components/srs-results-2/JsonRenderer';
 import { exportJsonSectionsToDocx } from '@/lib/docxExport';
 import type { NfNfrDetailedStoredPayload } from '@/lib/nfNfrDetailedTypes';
 import { sectionOrder, toLabel, updateJsonAtPath } from '@/lib/srsUtils';
 import type { JsonPath, JsonValue } from '@/lib/srsTypes';
+
+type DisplaySection = {
+  key: string;
+  title: string;
+  value: JsonValue;
+  kind: 'fr' | 'nfr' | 'default';
+};
+
+const TOP_SECTION_ORDER = [
+  'assumptions',
+  'constraints',
+  'features',
+  'functionalRequirements',
+  'nonFunctionalRequirements'
+] as const;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
 
 function getProjectNameFromContent(content: Record<string, unknown> | null): string {
   if (!content) return 'SRS Document';
@@ -36,21 +55,52 @@ export default function FrNfrDetailedResultPage() {
 
   const content = payload?.content ?? null;
   const validation = payload?.validation ?? null;
-  const autoFixSuggestions = payload?.autoFixSuggestions ?? [];
+  const predictionItems = payload?.prediction ?? [];
   const hasContent = content !== null;
 
   const projectName = getProjectNameFromContent(content);
 
   const orderedEntries = useMemo(() => {
-    if (!content) return [] as Array<[string, JsonValue]>;
-    return Object.entries(content as Record<string, JsonValue>).sort(([a], [b]) => sectionOrder(a, b));
+    if (!isRecord(content)) return [] as DisplaySection[];
+
+    const contentRecord = content as Record<string, JsonValue>;
+    const sections: DisplaySection[] = [];
+
+    TOP_SECTION_ORDER.forEach(key => {
+      if (!Object.prototype.hasOwnProperty.call(contentRecord, key)) return;
+
+      sections.push({
+        key,
+        title: key === 'functionalRequirements'
+          ? 'Functional Requirements'
+          : key === 'nonFunctionalRequirements'
+            ? 'Non-Functional Requirements'
+            : toLabel(key),
+        value: contentRecord[key],
+        kind: key === 'functionalRequirements' ? 'fr' : key === 'nonFunctionalRequirements' ? 'nfr' : 'default'
+      });
+    });
+
+    Object.entries(contentRecord)
+      .filter(([key]) => key !== 'projectName' && !TOP_SECTION_ORDER.includes(key as (typeof TOP_SECTION_ORDER)[number]))
+      .sort(([a], [b]) => sectionOrder(a, b))
+      .forEach(([key, value]) => {
+        sections.push({
+          key,
+          title: toLabel(key),
+          value,
+          kind: 'default'
+        });
+      });
+
+    return sections;
   }, [content]);
 
   useEffect(() => {
     if (!content) return;
     setOpenSection(prev => {
-      if (prev && orderedEntries.some(([sectionName]) => sectionName === prev)) return prev;
-      return orderedEntries[0]?.[0] ?? null;
+      if (prev && orderedEntries.some(section => section.key === prev)) return prev;
+      return orderedEntries[0]?.key ?? null;
     });
   }, [content, orderedEntries]);
 
@@ -78,10 +128,7 @@ export default function FrNfrDetailedResultPage() {
 
         const data = (await response.json().catch(() => null)) as unknown;
         if (!response.ok) {
-          const errorRecord =
-            data && typeof data === 'object' && !Array.isArray(data)
-              ? (data as Record<string, unknown>)
-              : null;
+          const errorRecord = isRecord(data) ? data : null;
           const message =
             errorRecord && typeof errorRecord.error === 'string'
               ? errorRecord.error
@@ -93,12 +140,9 @@ export default function FrNfrDetailedResultPage() {
           return;
         }
 
-        const rootRecord =
-          data && typeof data === 'object' && !Array.isArray(data)
-            ? (data as Record<string, unknown>)
-            : null;
+        const rootRecord = isRecord(data) ? data : null;
         const rawPayload =
-          rootRecord?.data && typeof rootRecord.data === 'object' && !Array.isArray(rootRecord.data)
+          rootRecord?.data && isRecord(rootRecord.data)
             ? (rootRecord.data as Record<string, unknown>)
             : rootRecord;
 
@@ -110,9 +154,11 @@ export default function FrNfrDetailedResultPage() {
           return;
         }
 
+        const generatedSrs = rawPayload.generatedSrs;
+        const generatedSrsRecord = isRecord(generatedSrs) ? generatedSrs : rawPayload;
+
         if (!isCancelled) {
-          console.log(rawPayload, "rawPayloadrawPayload")
-          setPayload(rawPayload.generatedSrs as NfNfrDetailedStoredPayload);
+          setPayload(generatedSrsRecord as NfNfrDetailedStoredPayload);
         }
       } catch (error) {
         if (!isCancelled) {
@@ -170,9 +216,9 @@ export default function FrNfrDetailedResultPage() {
         filename,
         title: projectName,
         subtitle: 'Detailed FR/NFR Export',
-        sections: orderedEntries.map(([sectionName, sectionValue]) => ({
-          title: toLabel(sectionName),
-          value: sectionValue
+        sections: orderedEntries.map(section => ({
+          title: section.title,
+          value: section.value
         }))
       });
 
@@ -337,35 +383,50 @@ export default function FrNfrDetailedResultPage() {
 
         <div className="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth">
           <div className="max-w-6xl mx-auto space-y-4 lg:space-y-6">
+            <section className="bg-white dark:bg-[#1a1d2d] rounded-xl border border-[#e7e9f3] dark:border-[#2a2e3b] shadow-sm p-4 lg:p-6">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Project Name</h2>
+              <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">{projectName}</p>
+            </section>
+
             <FrNfrValidationSummary validation={validation} />
-            <FrNfrAutoFixSuggestions autoFixSuggestions={autoFixSuggestions} />
+            <RequirementSmellSection predictionItems={predictionItems} />
 
             {hasContent ? (
-              orderedEntries.map(([sectionName, sectionValue]) => (
+              orderedEntries.map(section => (
                 <section
-                  key={sectionName}
+                  key={section.key}
                   className="bg-white dark:bg-[#1a1d2d] rounded-xl border border-[#e7e9f3] dark:border-[#2a2e3b] shadow-sm p-4 lg:p-6"
                 >
                   <button
                     type="button"
-                    onClick={() => setOpenSection(prev => (prev === sectionName ? null : sectionName))}
+                    onClick={() => setOpenSection(prev => (prev === section.key ? null : section.key))}
                     className="flex w-full items-center justify-between gap-3 text-left"
                   >
-                    <h3 className="text-base lg:text-lg font-bold text-slate-900 dark:text-white">
-                      {toLabel(sectionName)}
+                    <h3 className="flex items-center gap-2 text-base lg:text-lg font-bold text-slate-900 dark:text-white">
+                      {section.title}
+                      {section.kind === 'fr' && (
+                        <span className="inline-flex rounded-full bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 text-[11px] font-semibold text-blue-700 dark:text-blue-300">
+                          FR
+                        </span>
+                      )}
+                      {section.kind === 'nfr' && (
+                        <span className="inline-flex rounded-full bg-violet-100 dark:bg-violet-900/30 px-2 py-0.5 text-[11px] font-semibold text-violet-700 dark:text-violet-300">
+                          NFR
+                        </span>
+                      )}
                     </h3>
                     <span className="material-symbols-outlined text-slate-500 dark:text-slate-400">
-                      {openSection === sectionName ? 'expand_less' : 'expand_more'}
+                      {openSection === section.key ? 'expand_less' : 'expand_more'}
                     </span>
                   </button>
 
-                  {openSection === sectionName && (
+                  {openSection === section.key && (
                     <div className="mt-3 text-sm">
                       <JsonRenderer
-                        value={sectionValue}
-                        keyPrefix={sectionName}
+                        value={section.value}
+                        keyPrefix={section.key}
                         depth={0}
-                        path={[sectionName]}
+                        path={[section.key]}
                         onEdit={isEditing ? handleUpdate : undefined}
                       />
                     </div>

@@ -12,7 +12,24 @@ export type FrNfrValidationIssue = {
   raw?: Record<string, unknown>;
 };
 
+export type FrNfrValidationGroup = {
+  summary?: {
+    totalRequirements?: number;
+    totalIssues?: number;
+    errors?: number;
+    warnings?: number;
+  };
+  qualityScore?: number;
+  issues: FrNfrValidationIssue[];
+};
+
 export type FrNfrValidation = {
+  summary: {
+    errors: number
+    totalIssues: number
+    totalRequirements: number
+    warnings: number
+  };
   isValid: boolean;
   qualityScore: number | null;
   totalRequirements: number | null;
@@ -20,6 +37,11 @@ export type FrNfrValidation = {
   errors: number;
   warnings: number;
   issues: FrNfrValidationIssue[];
+  byType?: {
+    FR?: FrNfrValidationGroup;
+    NFR?: FrNfrValidationGroup;
+    [key: string]: FrNfrValidationGroup | undefined;
+  };
 };
 
 export type FrNfrAutoFixSuggestion = {
