@@ -51,16 +51,13 @@ export default function FrNfrChatSidebar({
 
     try {
       const body = {
-        userId,
-        projectId,
         instruction: input,
-        validationModel: 'rule-based'
       };
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/srs/reprompt-fr-nfr-v2/${userId}/${projectId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // body: JSON.stringify(body)
+        body: JSON.stringify(body)
       });
 
       if (!response.ok) {
@@ -72,18 +69,15 @@ export default function FrNfrChatSidebar({
       }
 
       const data = await response.json();
-      const updatedContent = data.content || data.updatedContent || data.updatedSRS || data.fixedContent;
+      const updatedContent = data.generatedSrs
 
-      const assistantText =
-        data.message?.content ||
-        data.message ||
-        data.response ||
-        (updatedContent ? 'FR/NFR content has been updated from your prompt.' : 'I could not generate an update.');
+      const assistantText = updatedContent ? 'FR/NFR content has been updated from your prompt.' : 'I could not generate an update.';
 
       setMessages(prev => [...prev, { role: 'assistant', content: String(assistantText) }]);
 
       if (updatedContent && onContentUpdate) {
         onContentUpdate(updatedContent);
+        console.log(updatedContent, "updatedContentupdatedContentupdatedContent")
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'An unexpected error occurred';

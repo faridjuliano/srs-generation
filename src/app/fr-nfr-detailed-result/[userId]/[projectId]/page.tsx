@@ -46,7 +46,7 @@ export default function FrNfrDetailedResultPage() {
   const projectId = params.projectId;
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [exportStatus, setExportStatus] = useState<'idle' | 'exporting' | 'done'>('idle');
   const [isLoading, setIsLoading] = useState(true);
@@ -58,6 +58,9 @@ export default function FrNfrDetailedResultPage() {
   const predictionItems = payload?.prediction ?? [];
   const hasContent = content !== null;
 
+  useEffect(() => {
+    console.log(payload, "payload")
+  }, [payload]);
   const projectName = getProjectNameFromContent(content);
 
   const orderedEntries = useMemo(() => {
@@ -157,6 +160,7 @@ export default function FrNfrDetailedResultPage() {
         const generatedSrs = rawPayload.generatedSrs;
         const generatedSrsRecord = isRecord(generatedSrs) ? generatedSrs : rawPayload;
 
+        console.log(generatedSrsRecord, 'generatedSrsRecordgeneratedSrsRecord')
         if (!isCancelled) {
           setPayload(generatedSrsRecord as NfNfrDetailedStoredPayload);
         }
@@ -193,8 +197,8 @@ export default function FrNfrDetailedResultPage() {
     setPayload(prev => {
       if (!prev) return prev;
       return {
-        ...prev,
-        content: updatedContent
+        // ...prev,
+        ...updatedContent
       };
     });
   };
@@ -355,17 +359,17 @@ export default function FrNfrDetailedResultPage() {
             <span className="text-slate-900 dark:text-white font-medium">Result</span>
           </nav>
           <div className="flex items-center gap-2 lg:gap-3">
-            <button
-              type="button"
-              onClick={() => setIsEditing(prev => !prev)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
-                isEditing
-                  ? 'bg-primary text-white border-primary hover:bg-blue-700'
-                  : 'bg-white dark:bg-transparent text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
-              }`}
-            >
-              {isEditing ? 'Done Editing' : 'Edit'}
-            </button>
+            {/*<button*/}
+            {/*  type="button"*/}
+            {/*  onClick={() => setIsEditing(prev => !prev)}*/}
+            {/*  className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${*/}
+            {/*    isEditing*/}
+            {/*      ? 'bg-primary text-white border-primary hover:bg-blue-700'*/}
+            {/*      : 'bg-white dark:bg-transparent text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'*/}
+            {/*  }`}*/}
+            {/*>*/}
+            {/*  {isEditing ? 'Done Editing' : 'Edit'}*/}
+            {/*</button>*/}
             <button
               type="button"
               onClick={() => void handleExportDocx()}
@@ -377,9 +381,6 @@ export default function FrNfrDetailedResultPage() {
               </span>
               <span>{exportStatus === 'exporting' ? 'Exporting...' : 'Export DOCX'}</span>
             </button>
-            <Link href="/new-fr-nfr-detailed" className="text-sm text-primary hover:underline">
-              Generate again
-            </Link>
           </div>
         </header>
 
@@ -412,7 +413,10 @@ export default function FrNfrDetailedResultPage() {
                         </span>
                       )}
                       {section.kind === 'nfr' && (
-                        <span className="inline-flex rounded-full bg-violet-100 dark:bg-violet-900/30 px-2 py-0.5 text-[11px] font-semibold text-violet-700 dark:text-violet-300">
+                        <span
+                          className="inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                          style={{ backgroundColor: '#f59e0b', color: '#ffffff' }}
+                        >
                           NFR
                         </span>
                       )}

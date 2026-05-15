@@ -135,13 +135,11 @@ export default function FrNfrValidationSummary({ validation }: FrNfrValidationSu
         <div className="flex items-center gap-3 flex-wrap">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">Validation Summary</h2>
           <span
-            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
-              !hasValidation
-                ? 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                : displayValidation.isValid
-                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                  : 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300'
-            }`}
+            className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold"
+            style={{
+              backgroundColor: !hasValidation ? '#e2e8f0' : displayValidation.isValid ? '#10b981' : '#e11d48',
+              color: '#ffffff'
+            }}
           >
             {!hasValidation ? 'Not validated' : displayValidation.isValid ? 'Valid' : 'Needs review'}
           </span>

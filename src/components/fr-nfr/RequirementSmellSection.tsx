@@ -48,6 +48,10 @@ export default function RequirementSmellSection({ predictionItems }: Requirement
   const groupedPredictions = useMemo(() => groupPredictions(predictionItems), [predictionItems]);
   const hasPredictions = predictionItems.length > 0;
 
+  if (!hasPredictions) {
+    return null;
+  }
+
   return (
     <section className="bg-white dark:bg-[#1a1d2d] rounded-xl border border-[#e7e9f3] dark:border-[#2a2e3b] shadow-sm p-4 lg:p-6 space-y-4">
       <button

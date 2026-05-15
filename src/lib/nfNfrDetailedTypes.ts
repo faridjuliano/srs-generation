@@ -23,7 +23,15 @@ export type NfNfrDetailedGenerateResponse = {
   projectId: string;
 };
 
+export type generatedSRS = {
+  content?: Record<string, unknown>;
+  validation?: FrNfrValidation;
+  autoFixSuggestions?: FrNfrAutoFixSuggestion[];
+  prediction?: NfNfrDetailedPrediction[];
+}
+
 export type NfNfrDetailedStoredPayload = {
+  generatedSRS?: generatedSRS;
   success: boolean;
   content?: Record<string, unknown>;
   validation?: FrNfrValidation;
