@@ -19,7 +19,6 @@ function hasWhitespace(value: string): boolean {
 
 export default function NewNfNfrDetailedPage() {
   const router = useRouter();
-  const backendBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
   const [nfNfrDetailedUserId, setNfNfrDetailedUserId] = useState('');
   const [nfNfrDetailedProjectId, setNfNfrDetailedProjectId] = useState('');
@@ -131,7 +130,7 @@ export default function NewNfNfrDetailedPage() {
         assumptions: nfNfrDetailedAssumptions.map(item => item.trim()).filter(Boolean)
       };
 
-      const response = await fetch(`${backendBaseUrl}/api/srs/fr-nfr-detailed`, {
+      const response = await fetch('/api/srs/fr-nfr-detailed', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -284,7 +283,7 @@ export default function NewNfNfrDetailedPage() {
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div>
                     <h3 className="text-base font-bold text-slate-900 dark:text-white">Features</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Add as many feature cards as needed for this example.</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Add as many feature cards as needed for the requirements.</p>
                   </div>
                     <button
                     type="button"

@@ -1,16 +1,17 @@
 "use client";
 
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import FrNfrChatSidebar from '@/components/fr-nfr/FrNfrChatSidebar';
+import { Sidebar } from '@/components/fr-nfr/ResultSidebar';
+import { ResultHeader } from '@/components/fr-nfr/ResultHeader';
+import { SectionCard } from '@/components/fr-nfr/SectionCard';
 import RequirementSmellSection from '@/components/fr-nfr/RequirementSmellSection';
 import FrNfrValidationSummary from '@/components/fr-nfr/FrNfrValidationSummary';
-import { JsonRenderer } from '@/components/srs-results-2/JsonRenderer';
 import Modal from '@/components/shared/Modal';
 import type { NfNfrDetailedStoredPayload } from '@/lib/nfNfrDetailedTypes';
-import { sectionOrder, toLabel, updateJsonAtPath } from '@/lib/srsUtils';
-import type { JsonPath, JsonValue } from '@/lib/srsTypes';
+import { sectionOrder, toLabel } from '@/lib/srsUtils';
+import type { JsonValue } from '@/lib/srsTypes';
 
 type DisplaySection = {
   key: string;
@@ -40,21 +41,27 @@ function getProjectNameFromContent(content: Record<string, unknown> | null): str
 export default function FrNfrDetailedResultPage() {
   const router = useRouter();
   const params = useParams<{ userId: string; projectId: string }>();
-  const backendBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
   const userId = params.userId;
   const projectId = params.projectId;
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isEditing] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [exportStatus, setExportStatus] = useState<'idle' | 'exporting' | 'done'>('idle');
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [payload, setPayload] = useState<NfNfrDetailedStoredPayload | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalTitle, setModalTitle] = useState<string | undefined>(undefined);
-  const [modalMessage, setModalMessage] = useState<string | undefined>(undefined);
+  const [modal, setModal] = useState<{ isOpen: boolean; title?: string; message?: string }>({
+    isOpen: false
+  });
+
+  const showModal = (title: string, message: string) => {
+    setModal({ isOpen: true, title, message });
+  };
+
+  const closeModal = () => {
+    setModal({ isOpen: false });
+  };
 
   const content = payload?.content ?? null;
   const validation = payload?.validation ?? null;
@@ -122,7 +129,7 @@ export default function FrNfrDetailedResultPage() {
 
       try {
         const response = await fetch(
-          `${backendBaseUrl}/api/projects/${encodeURIComponent(userId)}/${encodeURIComponent(projectId)}`,
+          `/api/projects/${encodeURIComponent(userId)}/${encodeURIComponent(projectId)}`,
           {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' }
@@ -180,17 +187,7 @@ export default function FrNfrDetailedResultPage() {
     return () => {
       isCancelled = true;
     };
-  }, [backendBaseUrl, projectId, userId]);
-
-  const handleUpdate = (path: JsonPath, value: JsonValue) => {
-    setPayload(prev => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        content: updateJsonAtPath(prev.content as JsonValue, path, value) as Record<string, unknown>
-      };
-    });
-  };
+  }, [projectId, userId]);
 
   const handleChatContentUpdate = (updatedContent: Record<string, unknown>) => {
     setPayload(prev => {
@@ -207,7 +204,7 @@ export default function FrNfrDetailedResultPage() {
 
     try {
       setExportStatus('exporting');
-      const response = await fetch(`${backendBaseUrl}/api/export/srs`, {
+      const response = await fetch('/api/export/srs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -222,42 +219,24 @@ export default function FrNfrDetailedResultPage() {
       if (!response.ok) {
         const errorText = await response.text().catch(() => '');
         setExportStatus('idle');
-        setModalTitle('Export failed');
-        setModalMessage(errorText || 'Failed to export SRS.');
-        setModalOpen(true);
+        showModal('Export failed', errorText || 'Failed to export SRS.');
         return;
       }
 
       const blob = await response.blob();
-      // const disposition = response.headers.get('content-disposition') || '';
-      // const filenameMatch = disposition.match(/filename\*?=(?:UTF-8''|")?([^";\n]+)"?/i);
-      // const filename = filenameMatch?.[1]
-      //   ? decodeURIComponent(filenameMatch[1].replace(/"/g, '').trim())
-      //   : `${projectName.replace(/[^a-zA-Z0-9-_]/g, '_').toLowerCase() || 'srs_document'}.srs`;
-      //
-      // const url = window.URL.createObjectURL(blob);
-      // const anchor = document.createElement('a');
-      // anchor.href = url;
-      // anchor.download = filename;
-      // document.body.appendChild(anchor);
-      // anchor.click();
-      // anchor.remove();
-      // window.URL.revokeObjectURL(url);
       const url = window.URL.createObjectURL(blob);
-
       const link = document.createElement("a");
       link.href = url;
       link.download = "srs-document.docx";
       link.click();
+      window.URL.revokeObjectURL(url);
 
       setExportStatus('done');
       setTimeout(() => setExportStatus('idle'), 2000);
     } catch (error) {
       setExportStatus('idle');
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      setModalTitle('Export error');
-      setModalMessage(`Failed to export SRS: ${errorMessage}\n\nPlease try again.`);
-      setModalOpen(true);
+      showModal('Export error', `Failed to export SRS: ${errorMessage}\n\nPlease try again.`);
     }
   };
 
@@ -272,51 +251,8 @@ export default function FrNfrDetailedResultPage() {
   if (!payload) {
     return (
       <div className="flex h-screen w-full overflow-hidden">
-        <button
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white dark:bg-[#161926] rounded-lg shadow-lg border border-slate-200 dark:border-slate-700"
-        >
-          <span className="material-symbols-outlined text-slate-600 dark:text-slate-300">
-            {isSidebarOpen ? 'close' : 'menu'}
-          </span>
-        </button>
-
-        {isSidebarOpen && (
-          <div
-            className="lg:hidden fixed inset-0 bg-black/50 z-30"
-            onClick={() => setIsSidebarOpen(false)}
-          />
-        )}
-
-        <aside className={`flex flex-col w-64 h-full bg-[#f8f9fc] dark:bg-[#161926] border-r border-[#e7e9f3] dark:border-[#2a2e3b] flex-shrink-0 fixed lg:static inset-y-0 left-0 z-40 transform transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-          <div className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="size-8 rounded bg-primary flex items-center justify-center text-white">
-                <span className="material-symbols-outlined">description</span>
-              </div>
-              <h1 className="text-lg font-bold tracking-tight">SRS Manager</h1>
-            </div>
-          </div>
-          <div className="px-4 mb-2">
-            <Link href="/new-fr-nfr-detailed" className="w-full inline-flex items-center gap-2 bg-primary text-white px-3 py-2.5 rounded-lg shadow-md shadow-blue-500/20 hover:bg-blue-700 transition-colors">
-              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add_circle</span>
-              <span className="text-sm font-bold">Generate Functional and Non-Functional requirement</span>
-            </Link>
-          </div>
-        </aside>
-
+        <Sidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
         <main className="flex flex-col flex-1 h-full min-w-0 bg-background-light dark:bg-background-dark overflow-hidden relative">
-          <header className="h-16 flex items-center justify-between px-4 lg:px-8 bg-white dark:bg-[#161926] border-b border-[#e7e9f3] dark:border-[#2a2e3b] flex-shrink-0 z-10">
-            <nav className="flex text-xs lg:text-sm text-slate-500 dark:text-slate-400 ml-12 lg:ml-0">
-              <a className="hover:text-primary hidden sm:inline" href="#">Projects</a>
-              <span className="mx-2 hidden sm:inline">/</span>
-              <span className="text-slate-900 dark:text-white font-medium">Result</span>
-            </nav>
-            <Link href="/new-fr-nfr-detailed" className="text-sm text-primary hover:underline">
-              Generate again
-            </Link>
-          </header>
-
           <div className="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth">
             <div className="max-w-3xl mx-auto bg-white dark:bg-[#1a1d2d] rounded-xl border border-[#e7e9f3] dark:border-[#2a2e3b] shadow-sm p-6">
               <p className="text-slate-700 dark:text-slate-300">{fetchError ?? 'No detailed FR/NFR result found.'}</p>
@@ -344,72 +280,13 @@ export default function FrNfrDetailedResultPage() {
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
-      <button
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white dark:bg-[#161926] rounded-lg shadow-lg border border-slate-200 dark:border-slate-700"
-      >
-        <span className="material-symbols-outlined text-slate-600 dark:text-slate-300">
-          {isSidebarOpen ? 'close' : 'menu'}
-        </span>
-      </button>
-
-      {isSidebarOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-30"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-
-      <aside className={`flex flex-col w-64 h-full bg-[#f8f9fc] dark:bg-[#161926] border-r border-[#e7e9f3] dark:border-[#2a2e3b] flex-shrink-0 fixed lg:static inset-y-0 left-0 z-40 transform transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-        <div className="p-6">
-          <div className="flex items-center gap-3">
-            <div className="size-8 rounded bg-primary flex items-center justify-center text-white">
-              <span className="material-symbols-outlined">description</span>
-            </div>
-            <h1 className="text-lg font-bold tracking-tight">SRS Manager</h1>
-          </div>
-        </div>
-        <div className="px-4 mb-2">
-          <Link href="/new-fr-nfr-detailed" className="w-full inline-flex items-center gap-2 bg-primary text-white px-3 py-2.5 rounded-lg shadow-md shadow-blue-500/20 hover:bg-blue-700 transition-colors">
-            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add_circle</span>
-            <span className="text-sm font-bold">Generate Functional and Non-Functional requirement</span>
-          </Link>
-        </div>
-      </aside>
-
+      <Sidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
       <main className="flex flex-col flex-1 h-full min-w-0 bg-background-light dark:bg-background-dark overflow-hidden relative">
-        <header className="h-16 flex items-center justify-between px-4 lg:px-8 bg-white dark:bg-[#161926] border-b border-[#e7e9f3] dark:border-[#2a2e3b] flex-shrink-0 z-10">
-          <nav className="flex text-xs lg:text-sm text-slate-500 dark:text-slate-400 ml-12 lg:ml-0">
-            <a className="hover:text-primary hidden sm:inline" href="#">Projects</a>
-            <span className="mx-2 hidden sm:inline">/</span>
-            <span className="text-slate-900 dark:text-white font-medium">Result</span>
-          </nav>
-          <div className="flex items-center gap-2 lg:gap-3">
-            {/*<button*/}
-            {/*  type="button"*/}
-            {/*  onClick={() => setIsEditing(prev => !prev)}*/}
-            {/*  className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${*/}
-            {/*    isEditing*/}
-            {/*      ? 'bg-primary text-white border-primary hover:bg-blue-700'*/}
-            {/*      : 'bg-white dark:bg-transparent text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'*/}
-            {/*  }`}*/}
-            {/*>*/}
-            {/*  {isEditing ? 'Done Editing' : 'Edit'}*/}
-            {/*</button>*/}
-            <button
-              type="button"
-              onClick={() => void handleExportSrs()}
-              disabled={!content || exportStatus === 'exporting'}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-transparent px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <span className="material-symbols-outlined text-lg">
-                {exportStatus === 'exporting' ? 'progress_activity' : 'download'}
-              </span>
-              <span>{exportStatus === 'exporting' ? 'Exporting...' : 'Export SRS'}</span>
-            </button>
-          </div>
-        </header>
-
+        <ResultHeader
+          onExport={handleExportSrs}
+          isExporting={exportStatus === 'exporting'}
+          canExport={!!content}
+        />
         <div className="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth">
           <div className="max-w-6xl mx-auto space-y-4 lg:space-y-6">
             <section className="bg-white dark:bg-[#1a1d2d] rounded-xl border border-[#e7e9f3] dark:border-[#2a2e3b] shadow-sm p-4 lg:p-6">
@@ -422,48 +299,14 @@ export default function FrNfrDetailedResultPage() {
 
             {hasContent ? (
               orderedEntries.map(section => (
-                <section
+                <SectionCard
                   key={section.key}
-                  className="bg-white dark:bg-[#1a1d2d] rounded-xl border border-[#e7e9f3] dark:border-[#2a2e3b] shadow-sm p-4 lg:p-6"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setOpenSection(prev => (prev === section.key ? null : section.key))}
-                    className="flex w-full items-center justify-between gap-3 text-left"
-                  >
-                    <h3 className="flex items-center gap-2 text-base lg:text-lg font-bold text-slate-900 dark:text-white">
-                      {section.title}
-                      {section.kind === 'fr' && (
-                        <span className="inline-flex rounded-full bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 text-[11px] font-semibold text-blue-700 dark:text-blue-300">
-                          FR
-                        </span>
-                      )}
-                      {section.kind === 'nfr' && (
-                        <span
-                          className="inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold"
-                          style={{ backgroundColor: '#f59e0b', color: '#ffffff' }}
-                        >
-                          NFR
-                        </span>
-                      )}
-                    </h3>
-                    <span className="material-symbols-outlined text-slate-500 dark:text-slate-400">
-                      {openSection === section.key ? 'expand_less' : 'expand_more'}
-                    </span>
-                  </button>
-
-                  {openSection === section.key && (
-                    <div className="mt-3 text-sm">
-                      <JsonRenderer
-                        value={section.value}
-                        keyPrefix={section.key}
-                        depth={0}
-                        path={[section.key]}
-                        onEdit={isEditing ? handleUpdate : undefined}
-                      />
-                    </div>
-                  )}
-                </section>
+                  title={section.title}
+                  kind={section.kind}
+                  value={section.value}
+                  isOpen={openSection === section.key}
+                  onToggle={() => setOpenSection(prev => (prev === section.key ? null : section.key))}
+                />
               ))
             ) : (
               <section className="bg-white dark:bg-[#1a1d2d] rounded-xl border border-[#e7e9f3] dark:border-[#2a2e3b] shadow-sm p-4 lg:p-6">
@@ -483,15 +326,16 @@ export default function FrNfrDetailedResultPage() {
         projectId={projectId}
       />
       <Modal
-        isOpen={modalOpen}
-        title={modalTitle}
-        message={modalMessage}
+        isOpen={modal.isOpen}
+        title={modal.title}
+        message={modal.message}
         primaryLabel="OK"
-        onPrimary={() => setModalOpen(false)}
-        onClose={() => setModalOpen(false)}
+        onPrimary={closeModal}
+        onClose={closeModal}
       />
     </div>
   );
 }
+
 
 
