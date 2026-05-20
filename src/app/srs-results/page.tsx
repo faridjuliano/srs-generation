@@ -20,6 +20,7 @@ import NonFunctionalRequirementsSectionNew from '@/components/srs/sections/NonFu
 import OtherNonfunctionalRequirementsSection from '@/components/srs/sections/OtherNonfunctionalRequirementsSection';
 import AppendicesSection from '@/components/srs/sections/AppendicesSection';
 import { exportSRSToDocx } from '@/lib/docxExport';
+import Modal from '@/components/shared/Modal';
 import { generateSRSFromTemplate } from '@/lib/srsTemplateGenerator';
 import type { ValidationIssue, ValidationResult } from '@/lib/srsValidator';
 
@@ -401,6 +402,9 @@ export default function SRSResultsPage() {
   const [isChatboxOpen, setIsChatboxOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [exportStatus, setExportStatus] = useState<'idle' | 'exporting' | 'done'>('idle');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTitle, setModalTitle] = useState<string | undefined>(undefined);
+  const [modalMessage, setModalMessage] = useState<string | undefined>(undefined);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [editableContent, setEditableContent] = useState<EditableContent>({
     title: '',
@@ -646,7 +650,9 @@ export default function SRSResultsPage() {
       console.error('Failed to export DOCX:', error);
       setExportStatus('idle');
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Failed to export DOCX: ${errorMessage}\n\nPlease try again. If the problem persists, try refreshing the page.`);
+      setModalTitle('Export failed');
+      setModalMessage(`Failed to export DOCX: ${errorMessage}\n\nPlease try again. If the problem persists, try refreshing the page.`);
+      setModalOpen(true);
     }
   };
 
@@ -1029,6 +1035,14 @@ export default function SRSResultsPage() {
         </div>
       </main>
 
+      <Modal
+        isOpen={modalOpen}
+        title={modalTitle}
+        message={modalMessage}
+        onPrimary={() => setModalOpen(false)}
+        onClose={() => setModalOpen(false)}
+      />
+
       {/* Right Sidebar - Document Info OR Chat */}
       {isInfoPanelOpen && (
         <Sidebar
@@ -1043,17 +1057,17 @@ export default function SRSResultsPage() {
       )}
 
       {/* Chat Sidebar */}
-      {isChatboxOpen && (
-        <ChatSidebar
-          isOpen={isChatboxOpen}
-          onClose={() => setIsChatboxOpen(false)}
-          srsContent={editableContent}
-          formData={formData || undefined}
-          onSRSUpdate={(updatedContent) =>
-            setEditableContent(prev => normalizeGeneratedContent(updatedContent, prev))
-          }
-        />
-      )}
+      {/*{isChatboxOpen && (*/}
+      {/*  <ChatSidebar*/}
+      {/*    isOpen={isChatboxOpen}*/}
+      {/*    onClose={() => setIsChatboxOpen(false)}*/}
+      {/*    srsContent={editableContent}*/}
+      {/*    formData={formData || undefined}*/}
+      {/*    onSRSUpdate={(updatedContent) =>*/}
+      {/*      setEditableContent(prev => normalizeGeneratedContent(updatedContent, prev))*/}
+      {/*    }*/}
+      {/*  />*/}
+      {/*)}*/}
 
       {/* Overlay for info panel on mobile */}
       {isInfoPanelOpen && (

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type {
   NfNfrDetailedFeature,
   NfNfrDetailedGenerateRequest,
@@ -21,7 +21,7 @@ export default function NewNfNfrDetailedPage() {
   const router = useRouter();
   const backendBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
-  const [nfNfrDetailedUserId, setNfNfrDetailedUserId] = useState('user-001');
+  const [nfNfrDetailedUserId, setNfNfrDetailedUserId] = useState('');
   const [nfNfrDetailedProjectId, setNfNfrDetailedProjectId] = useState('');
   const [nfNfrDetailedProjectName, setNfNfrDetailedProjectName] = useState('Hospital Booking System');
   const [nfNfrDetailedProjectDescription, setNfNfrDetailedProjectDescription] = useState(
@@ -50,6 +50,16 @@ export default function NewNfNfrDetailedPage() {
   const [isGeneratingNfNfrDetailed, setIsGeneratingNfNfrDetailed] = useState(false);
   const [nfNfrDetailedError, setNfNfrDetailedError] = useState<string | null>(null);
   const [showRequiredWarnings, setShowRequiredWarnings] = useState(false);
+
+  // Retrieve author name from sessionStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const authorName = sessionStorage.getItem('srs-author-name');
+      if (authorName) {
+        setNfNfrDetailedUserId(authorName);
+      }
+    }
+  }, []);
 
   const isUserIdMissing = nfNfrDetailedUserId.trim().length === 0;
   const isUserIdInvalid = hasWhitespace(nfNfrDetailedUserId.trim());
@@ -206,26 +216,26 @@ export default function NewNfNfrDetailedPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-slate-900 dark:text-white mb-2">
-                    User ID <span className="text-rose-600">*</span>
+                    Author Name <span className="text-rose-600">*</span>
                   </label>
                   <input
                     type="text"
                     value={nfNfrDetailedUserId}
                     onChange={e => setNfNfrDetailedUserId(e.target.value)}
                     className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#202434] px-4 py-3 text-sm text-slate-900 dark:text-white focus:border-primary focus:ring-2 focus:ring-primary/20"
-                    placeholder="user-001"
+                    placeholder="Your author name"
                   />
                   {showRequiredWarnings && isUserIdMissing && (
-                    <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">User ID is required.</p>
+                    <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">Author name is required.</p>
                   )}
                   {showRequiredWarnings && isUserIdInvalid && !isUserIdMissing && (
-                    <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">User ID cannot contain spaces.</p>
+                    <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">Author name cannot contain spaces.</p>
                   )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-slate-900 dark:text-white mb-2">
-                    Project ID
+                    Project ID (Optional, will be auto-generated if left blank)
                   </label>
                   <input
                     type="text"

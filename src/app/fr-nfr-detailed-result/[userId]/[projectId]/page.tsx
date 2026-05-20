@@ -7,7 +7,7 @@ import FrNfrChatSidebar from '@/components/fr-nfr/FrNfrChatSidebar';
 import RequirementSmellSection from '@/components/fr-nfr/RequirementSmellSection';
 import FrNfrValidationSummary from '@/components/fr-nfr/FrNfrValidationSummary';
 import { JsonRenderer } from '@/components/srs-results-2/JsonRenderer';
-import { exportJsonSectionsToDocx } from '@/lib/docxExport';
+import Modal from '@/components/shared/Modal';
 import type { NfNfrDetailedStoredPayload } from '@/lib/nfNfrDetailedTypes';
 import { sectionOrder, toLabel, updateJsonAtPath } from '@/lib/srsUtils';
 import type { JsonPath, JsonValue } from '@/lib/srsTypes';
@@ -52,15 +52,15 @@ export default function FrNfrDetailedResultPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [payload, setPayload] = useState<NfNfrDetailedStoredPayload | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTitle, setModalTitle] = useState<string | undefined>(undefined);
+  const [modalMessage, setModalMessage] = useState<string | undefined>(undefined);
 
   const content = payload?.content ?? null;
   const validation = payload?.validation ?? null;
   const predictionItems = payload?.prediction ?? [];
   const hasContent = content !== null;
 
-  useEffect(() => {
-    console.log(payload, "payload")
-  }, [payload]);
   const projectName = getProjectNameFromContent(content);
 
   const orderedEntries = useMemo(() => {
@@ -160,7 +160,6 @@ export default function FrNfrDetailedResultPage() {
         const generatedSrs = rawPayload.generatedSrs;
         const generatedSrsRecord = isRecord(generatedSrs) ? generatedSrs : rawPayload;
 
-        console.log(generatedSrsRecord, 'generatedSrsRecordgeneratedSrsRecord')
         if (!isCancelled) {
           setPayload(generatedSrsRecord as NfNfrDetailedStoredPayload);
         }
@@ -197,41 +196,68 @@ export default function FrNfrDetailedResultPage() {
     setPayload(prev => {
       if (!prev) return prev;
       return {
-        // ...prev,
+        ...prev,
         ...updatedContent
       };
     });
   };
 
-  const handleExportDocx = async () => {
+  const handleExportSrs = async () => {
     if (!content) return;
 
     try {
       setExportStatus('exporting');
-      const date = new Date().toISOString().split('T')[0];
-      const projectNameForFile = (projectName || 'Detailed_FR_NFR_Document')
-        .replace(/[^a-zA-Z0-9-_]/g, '_')
-        .replace(/_+/g, '_')
-        .replace(/^_+|_+$/g, '')
-        .toLowerCase();
-      const filename = `${projectNameForFile || 'detailed_fr_nfr_document'}_${date}.docx`;
-
-      await exportJsonSectionsToDocx({
-        filename,
-        title: projectName,
-        subtitle: 'Detailed FR/NFR Export',
-        sections: orderedEntries.map(section => ({
-          title: section.title,
-          value: section.value
-        }))
+      const response = await fetch(`${backendBaseUrl}/api/export/srs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId,
+          projectName,
+          generatedSrs: {
+            content
+          }
+        })
       });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        setExportStatus('idle');
+        setModalTitle('Export failed');
+        setModalMessage(errorText || 'Failed to export SRS.');
+        setModalOpen(true);
+        return;
+      }
+
+      const blob = await response.blob();
+      // const disposition = response.headers.get('content-disposition') || '';
+      // const filenameMatch = disposition.match(/filename\*?=(?:UTF-8''|")?([^";\n]+)"?/i);
+      // const filename = filenameMatch?.[1]
+      //   ? decodeURIComponent(filenameMatch[1].replace(/"/g, '').trim())
+      //   : `${projectName.replace(/[^a-zA-Z0-9-_]/g, '_').toLowerCase() || 'srs_document'}.srs`;
+      //
+      // const url = window.URL.createObjectURL(blob);
+      // const anchor = document.createElement('a');
+      // anchor.href = url;
+      // anchor.download = filename;
+      // document.body.appendChild(anchor);
+      // anchor.click();
+      // anchor.remove();
+      // window.URL.revokeObjectURL(url);
+      const url = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "srs-document.docx";
+      link.click();
 
       setExportStatus('done');
       setTimeout(() => setExportStatus('idle'), 2000);
     } catch (error) {
       setExportStatus('idle');
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Failed to export DOCX: ${errorMessage}\n\nPlease try again.`);
+      setModalTitle('Export error');
+      setModalMessage(`Failed to export SRS: ${errorMessage}\n\nPlease try again.`);
+      setModalOpen(true);
     }
   };
 
@@ -372,14 +398,14 @@ export default function FrNfrDetailedResultPage() {
             {/*</button>*/}
             <button
               type="button"
-              onClick={() => void handleExportDocx()}
+              onClick={() => void handleExportSrs()}
               disabled={!content || exportStatus === 'exporting'}
               className="inline-flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-transparent px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-lg">
                 {exportStatus === 'exporting' ? 'progress_activity' : 'download'}
               </span>
-              <span>{exportStatus === 'exporting' ? 'Exporting...' : 'Export DOCX'}</span>
+              <span>{exportStatus === 'exporting' ? 'Exporting...' : 'Export SRS'}</span>
             </button>
           </div>
         </header>
@@ -455,6 +481,14 @@ export default function FrNfrDetailedResultPage() {
         onContentUpdate={handleChatContentUpdate}
         userId={userId}
         projectId={projectId}
+      />
+      <Modal
+        isOpen={modalOpen}
+        title={modalTitle}
+        message={modalMessage}
+        primaryLabel="OK"
+        onPrimary={() => setModalOpen(false)}
+        onClose={() => setModalOpen(false)}
       />
     </div>
   );
