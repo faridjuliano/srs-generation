@@ -211,7 +211,7 @@ export default function FrNfrValidationSummary({ validation }: FrNfrValidationSu
               </button>
 
               {isByTypeOpen && (
-                <div className="grid gap-3 lg:grid-cols-2">
+                <div className="grid gap-3">
                   {validationGroups.map(group => {
                     const groupScore = group.data.qualityScore ?? null;
                     const groupTone = getGroupTone(groupScore);
