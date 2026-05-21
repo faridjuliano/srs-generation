@@ -321,9 +321,9 @@ export default function FrNfrResultsPage() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => setIsChatOpen(true)}
+              onClick={() => setIsChatOpen(!isChatOpen)}
               className="p-2 text-slate-500 hover:text-primary transition-colors"
-              title="Open FR/NFR reprompt chat"
+              title={isChatOpen ? 'Close FR/NFR reprompt chat' : 'Open FR/NFR reprompt chat'}
             >
               <span className="material-symbols-outlined text-lg">smart_toy</span>
             </button>
@@ -387,7 +387,7 @@ export default function FrNfrResultsPage() {
 
       <FrNfrChatSidebar
         isOpen={isChatOpen}
-        onClose={() => {}}
+        onClose={() => setIsChatOpen(false)}
         content={content ?? undefined}
         onContentUpdate={handleChatContentUpdate}
       />

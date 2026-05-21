@@ -8,14 +8,6 @@ type SidebarProps = {
 export function Sidebar({ isOpen, onToggle }: SidebarProps) {
   return (
     <>
-      <button
-        onClick={onToggle}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white dark:bg-[#161926] rounded-lg shadow-lg border border-slate-200 dark:border-slate-700"
-      >
-        <span className="material-symbols-outlined text-slate-600 dark:text-slate-300">
-          {isOpen ? 'close' : 'menu'}
-        </span>
-      </button>
 
       {isOpen && (
         <div
@@ -34,7 +26,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
             <div className="size-8 rounded bg-primary flex items-center justify-center text-white">
               <span className="material-symbols-outlined">description</span>
             </div>
-            <h1 className="text-lg font-bold tracking-tight">SRS Manager</h1>
+            <h1 className="text-lg font-bold tracking-tight">SRS Generator</h1>
           </div>
         </div>
         <div className="px-4 mb-2">

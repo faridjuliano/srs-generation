@@ -126,7 +126,7 @@ export default function ChatSidebar({
         aria-label="AI Assistant chat drawer"
         className={`w-80 h-full bg-white dark:bg-[#161926] border-l border-[#e7e9f3] dark:border-[#2a2e3b] flex flex-col flex-shrink-0 z-20 shadow-xl fixed lg:static inset-y-0 right-0 transition-transform duration-300 ease-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
+        } lg:translate-x-0`}
       >
         {/* Header */}
         <div className="h-16 flex items-center justify-between px-5 border-b border-[#e7e9f3] dark:border-[#2a2e3b] bg-slate-50/50 dark:bg-[#1a1d2d]">
@@ -134,14 +134,14 @@ export default function ChatSidebar({
             <span className="material-symbols-outlined text-primary">smart_toy</span>
             <h2 className="font-bold text-slate-900 dark:text-white">AI Assistant</h2>
           </div>
-          {/*<button*/}
-          {/*  type="button"*/}
-          {/*  onClick={onClose}*/}
-          {/*  className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"*/}
-          {/*  aria-label="Close chat"*/}
-          {/*>*/}
-          {/*  <span className="material-symbols-outlined">close</span>*/}
-          {/*</button>*/}
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors lg:hidden"
+            aria-label="Close chat"
+          >
+            <span className="material-symbols-outlined">close</span>
+          </button>
         </div>
 
         {/* Messages Area */}

@@ -47,6 +47,7 @@ export default function FrNfrDetailedResultPage() {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [exportStatus, setExportStatus] = useState<'idle' | 'exporting' | 'done'>('idle');
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -253,6 +254,15 @@ export default function FrNfrDetailedResultPage() {
       <div className="flex h-screen w-full overflow-hidden">
         <Sidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
         <main className="flex flex-col flex-1 h-full min-w-0 bg-background-light dark:bg-background-dark overflow-hidden relative">
+          <ResultHeader
+            onExport={() => {}}
+            isExporting={false}
+            canExport={false}
+            onSidebarToggle={() => setIsSidebarOpen(prev => !prev)}
+            isSidebarOpen={isSidebarOpen}
+            onChatToggle={() => setIsChatOpen(prev => !prev)}
+            isChatOpen={isChatOpen}
+          />
           <div className="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth">
             <div className="max-w-3xl mx-auto bg-white dark:bg-[#1a1d2d] rounded-xl border border-[#e7e9f3] dark:border-[#2a2e3b] shadow-sm p-6">
               <p className="text-slate-700 dark:text-slate-300">{fetchError ?? 'No detailed FR/NFR result found.'}</p>
@@ -267,8 +277,8 @@ export default function FrNfrDetailedResultPage() {
         </main>
 
       <FrNfrChatSidebar
-        isOpen={true}
-        onClose={() => {}}
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
         content={undefined}
         onContentUpdate={handleChatContentUpdate}
         userId={userId}
@@ -286,6 +296,10 @@ export default function FrNfrDetailedResultPage() {
           onExport={handleExportSrs}
           isExporting={exportStatus === 'exporting'}
           canExport={!!content}
+          onSidebarToggle={() => setIsSidebarOpen(prev => !prev)}
+          isSidebarOpen={isSidebarOpen}
+          onChatToggle={() => setIsChatOpen(prev => !prev)}
+          isChatOpen={isChatOpen}
         />
         <div className="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth">
           <div className="max-w-6xl mx-auto space-y-4 lg:space-y-6">
@@ -318,8 +332,8 @@ export default function FrNfrDetailedResultPage() {
       </main>
 
       <FrNfrChatSidebar
-        isOpen={true}
-        onClose={() => {}}
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
         content={content ?? undefined}
         onContentUpdate={handleChatContentUpdate}
         userId={userId}

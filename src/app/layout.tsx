@@ -11,8 +11,8 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "SRS Generation & AI Chat",
-  description: "AI-powered SRS generation with chatbot capabilities",
+  title: "SRS FR and FR generation with AI",
+  description: "AI-powered SRS generation ",
 };
 
 export default function RootLayout({
