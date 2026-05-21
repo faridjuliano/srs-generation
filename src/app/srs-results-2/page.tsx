@@ -134,9 +134,9 @@ export default function SRSResults2Page() {
 	  <div className="flex items-center gap-3 flex-shrink-0">
 		<button
 		  type="button"
-		  onClick={() => setIsChatOpen(true)}
+		  onClick={() => setIsChatOpen(!isChatOpen)}
 		  className="p-2 text-slate-500 hover:text-primary transition-colors"
-		  title="Open iteration chat"
+		  title={isChatOpen ? 'Close iteration chat' : 'Open iteration chat'}
 		>
 		  <span className="material-symbols-outlined text-lg">smart_toy</span>
 		</button>
@@ -290,7 +290,7 @@ export default function SRSResults2Page() {
 	  </main>
 
 	  <ChatSidebar
-		isOpen={true}
+		isOpen={isChatOpen}
 		onClose={() => setIsChatOpen(false)}
 		srsContent={content ?? undefined}
 		formData={{ projectName }}
