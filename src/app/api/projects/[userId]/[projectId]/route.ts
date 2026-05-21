@@ -1,16 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 
 const backendBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
-export async function GET(
-  _request: Request,
-  { params }: { params: { userId: string; projectId: string } }
-) {
+export async function GET(request: NextRequest, context: { params: unknown }) {
   try {
-    // In newer Next.js versions `params` can be a Promise. Await it before use.
-    const resolvedParams = await (params as any);
+    // Next may provide params as a Promise. Await it before use.
+    const params = (await context.params) as Record<string, string>;
+    const userId = params.userId;
+    const projectId = params.projectId;
+
     const response = await fetch(
-      `${backendBaseUrl}/api/projects/${encodeURIComponent(resolvedParams.userId)}/${encodeURIComponent(resolvedParams.projectId)}`,
+      `${backendBaseUrl}/api/projects/${encodeURIComponent(userId)}/${encodeURIComponent(projectId)}`,
       {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
@@ -41,4 +41,3 @@ export async function GET(
 }
 
 export const runtime = 'nodejs';
-
