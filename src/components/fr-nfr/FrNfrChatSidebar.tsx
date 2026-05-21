@@ -54,7 +54,14 @@ export default function FrNfrChatSidebar({
         instruction: input,
       };
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/srs/reprompt-fr-nfr-v2/${userId}/${projectId}`, {
+      if (!userId || !projectId) {
+        const message = 'Missing userId or projectId';
+        setError(message);
+        setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${message}` }]);
+        return;
+      }
+
+      const response = await fetch(`/api/srs/reprompt-fr-nfr-v2/${encodeURIComponent(userId)}/${encodeURIComponent(projectId)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
