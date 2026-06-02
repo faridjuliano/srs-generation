@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import {useEffect, useState} from 'react';
 import Modal from '@/components/shared/Modal';
 
 export default function Home() {
@@ -11,6 +11,10 @@ export default function Home() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState<string | undefined>(undefined);
   const [modalMessage, setModalMessage] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    router.push('/login');
+  }, [router]);
 
   const handleStartCreating = () => {
     if (!projectName.trim()) {

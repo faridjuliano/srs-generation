@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { useLogout } from '@/hooks/useAuth';
 import type {
   NfNfrDetailedFeature,
   NfNfrDetailedGenerateRequest,
@@ -19,6 +20,7 @@ function hasWhitespace(value: string): boolean {
 
 export default function NewNfNfrDetailedPage() {
   const router = useRouter();
+  const logout = useLogout();
 
   const [nfNfrDetailedUserId, setNfNfrDetailedUserId] = useState('');
   const [nfNfrDetailedProjectId, setNfNfrDetailedProjectId] = useState('');
@@ -175,23 +177,40 @@ export default function NewNfNfrDetailedPage() {
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
-      <aside className="hidden lg:flex flex-col w-64 h-full bg-[#f8f9fc] dark:bg-[#161926] border-r border-[#e7e9f3] dark:border-[#2a2e3b] flex-shrink-0">
-        <div className="p-6">
-          <div className="flex items-center gap-3">
-            <div className="size-8 rounded bg-primary flex items-center justify-center text-white">
-              <span className="material-symbols-outlined">description</span>
+      <aside className="hidden lg:flex flex-col justify-between w-64 h-full bg-[#f8f9fc] dark:bg-[#161926] border-r border-[#e7e9f3] dark:border-[#2a2e3b] flex-shrink-0">
+        <div className="">
+          <div className="p-6">
+            <div className="flex items-center gap-3">
+              <div className="size-8 rounded bg-primary flex items-center justify-center text-white">
+                <span className="material-symbols-outlined">description</span>
+              </div>
+              <h1 className="text-lg font-bold tracking-tight">SRS Generator</h1>
             </div>
-            <h1 className="text-lg font-bold tracking-tight">SRS Manager</h1>
+          </div>
+          <div className="px-4">
+            <Link
+              href="/new-fr-nfr-detailed"
+              className="w-full inline-flex items-center gap-2 bg-primary text-white px-3 py-2.5 rounded-lg shadow-md shadow-blue-500/20 hover:bg-blue-700 transition-colors"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add_circle</span>
+              <span className="text-sm font-bold">Generate Functional and Non-Functional Requirement</span>
+            </Link>
+          </div>
+          <div className="p-4">
+            <h4 className="font-semibold text-slate-900 dark:text-white">Recently Generated:</h4>
           </div>
         </div>
-        <div className="px-4">
-              <Link
-            href="/new-fr-nfr-detailed"
-            className="w-full inline-flex items-center gap-2 bg-primary text-white px-3 py-2.5 rounded-lg shadow-md shadow-blue-500/20 hover:bg-blue-700 transition-colors"
+
+
+
+        <div className="mt-auto p-4 border-t border-[#e7e9f3] dark:border-[#2a2e3b]">
+          <button
+            onClick={logout}
+            className="cursor-pointer w-full inline-flex items-center justify-center gap-2 bg-red-600 text-white px-3 py-2.5 rounded-lg hover:bg-red-800 transition-colors text-sm font-medium"
           >
-            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add_circle</span>
-            <span className="text-sm font-bold">Generate Functional and Non-Functional Requirement</span>
-          </Link>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>logout</span>
+            <span>Logout</span>
+          </button>
         </div>
       </aside>
 
