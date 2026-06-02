@@ -23,7 +23,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        <aside className="hidden lg:flex flex-col justify-between w-64 h-full bg-[#f8f9fc] dark:bg-[#161926] border-r border-[#e7e9f3] dark:border-[#2a2e3b] flex-shrink-0">
+        <aside className="flex flex-col justify-between w-64 h-full bg-[#f8f9fc] dark:bg-[#161926] border-r border-[#e7e9f3] dark:border-[#2a2e3b] flex-shrink-0">
           <div className="">
             <div className="p-6">
               <div className="flex items-center gap-3">
