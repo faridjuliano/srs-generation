@@ -36,8 +36,9 @@ function LoginForm() {
         setLoading(false);
         return;
       }
+      console.log('Login response data:', data.data);
       let token = data.data.token;
-      let user = data.data.user;
+      let user = data.data;
       if (token) {
         localStorage.setItem('token', token);
       }
