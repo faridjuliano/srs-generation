@@ -65,7 +65,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark p-4">
       <div className="max-w-md w-full bg-white dark:bg-[#0f1724] rounded-lg shadow-md p-6">
-        <h1 className="text-xl font-semibold mb-4 text-slate-900 dark:text-white">Register</h1>
+        <h1 className="text-xl font-semibold mb-4 text-slate-900 dark:text-white">Register to SRS Generator</h1>
          {error && <div className="text-sm text-red-600 mb-2">{error}</div>}
          {success && <div className="text-sm text-green-600 mb-2">Registered successfully — redirecting...</div>}
         <form onSubmit={handleSubmit} className="space-y-3">

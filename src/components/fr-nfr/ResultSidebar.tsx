@@ -46,17 +46,6 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
           </div>
           <LogoutBtn />
         </aside>
-        <div className="px-4 mb-2">
-          <Link
-            href="/new-fr-nfr-detailed"
-            className="w-full inline-flex items-center gap-2 bg-primary text-white px-3 py-2.5 rounded-lg shadow-md shadow-blue-500/20 hover:bg-blue-700 transition-colors"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
-              add_circle
-            </span>
-            <span className="text-sm font-bold">Generate Functional and Non-Functional requirement</span>
-          </Link>
-        </div>
       </aside>
     </>
   );
