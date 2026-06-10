@@ -27,7 +27,7 @@ export default function Home() {
     setIsLoading(true);
     // Store the author name in session storage
     sessionStorage.setItem('srs-author-name', projectName);
-    router.push('/new-fr-nfr-detailed');
+    router.push('/new-requirement');
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

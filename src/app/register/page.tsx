@@ -17,7 +17,7 @@ export default function RegisterPage() {
     // Check if auth token already exists in localStorage
     const token = localStorage.getItem('token');
     if (token) {
-      router.push('/new-fr-nfr-detailed');
+      router.push('/new-requirement');
     }
   }, [router]);
 
@@ -54,8 +54,8 @@ export default function RegisterPage() {
        setSuccess(true);
        setLoading(false);
        
-       // Redirect to new-fr-nfr-detailed after short delay (auto-logged in via JWT cookie)
-       setTimeout(() => router.push('/new-fr-nfr-detailed'), 1000);
+       // Redirect to new-requirement after short delay (auto-logged in via JWT cookie)
+       setTimeout(() => router.push('/new-requirement'), 1000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
       setLoading(false);

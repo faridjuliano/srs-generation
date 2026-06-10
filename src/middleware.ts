@@ -3,8 +3,8 @@ import type { NextRequest } from 'next/server';
 
 // Routes that require authentication via token cookie
 const protectedRoutes = [
-  '/new-fr-nfr-detailed',
-  '/fr-nfr-detailed-result',
+  '/new-requirement',
+  '/requirement-result',
 ];
 
 // Auth pages that redirect authenticated users away
@@ -30,9 +30,9 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // If an authenticated user opens /login or /register, send them to /new-fr-nfr-detailed
+  // If an authenticated user opens /login or /register, send them to /new-requirement
   if (isAuthRoute && isAuthenticated) {
-    return NextResponse.redirect(new URL('/new-fr-nfr-detailed', request.url));
+    return NextResponse.redirect(new URL('/new-requirement', request.url));
   }
 
   return NextResponse.next();
