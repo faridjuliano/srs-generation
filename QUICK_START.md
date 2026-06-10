@@ -127,7 +127,7 @@ Currently protected (require login):
 - ✅ `/srs-results`
 - ✅ `/srs-results-2`
 - ✅ `/fr-nfr-results`
-- ✅ `/fr-nfr-detailed-result`
+- ✅ `/requirement-result`
 
 **To add more routes**, edit `src/middleware.ts`:
 ```typescript

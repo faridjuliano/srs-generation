@@ -34,7 +34,7 @@ export default function RecentSrs() {
     if (projectId === projectIdParams) {
       return
     } else {
-      router.push(`/fr-nfr-detailed-result/${userId}/${projectId}`);
+      router.push(`/requirement-result/${userId}/${projectId}`);
     }
   }
 

@@ -15,7 +15,7 @@ function LoginForm() {
     // Check if auth token already exists in localStorage
     const token = localStorage.getItem('token');
     if (token) {
-      router.push('/new-fr-nfr-detailed');
+      router.push('/new-requirement');
     }
   }, [router]);
 
@@ -52,7 +52,7 @@ function LoginForm() {
 
       // successful login — redirect to intended page or home
       setLoading(false);
-      router.push('/new-fr-nfr-detailed');
+      router.push('/new-requirement');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
       setLoading(false);

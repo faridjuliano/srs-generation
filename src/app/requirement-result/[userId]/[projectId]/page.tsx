@@ -267,7 +267,7 @@ export default function FrNfrDetailedResultPage() {
             <div className="max-w-3xl mx-auto bg-white dark:bg-[#1a1d2d] rounded-xl border border-[#e7e9f3] dark:border-[#2a2e3b] shadow-sm p-6">
               <p className="text-slate-700 dark:text-slate-300">{fetchError ?? 'No detailed FR/NFR result found.'}</p>
               <button
-                onClick={() => router.push('/new-fr-nfr-detailed')}
+                onClick={() => router.push('/new-requirement')}
                 className="mt-4 px-4 py-2 rounded-lg bg-primary text-white"
               >
                 Go to Generator
