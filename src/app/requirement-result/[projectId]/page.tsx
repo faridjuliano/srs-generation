@@ -12,6 +12,7 @@ import Modal from '@/components/shared/Modal';
 import type { NfNfrDetailedStoredPayload } from '@/lib/nfNfrDetailedTypes';
 import { sectionOrder, toLabel } from '@/lib/srsUtils';
 import type { JsonValue } from '@/lib/srsTypes';
+import {getCurrentUser} from "@/lib/auth";
 
 type DisplaySection = {
   key: string;
@@ -39,10 +40,13 @@ function getProjectNameFromContent(content: Record<string, unknown> | null): str
 }
 
 export default function FrNfrDetailedResultPage() {
-  const router = useRouter();
-  const params = useParams<{ userId: string; projectId: string }>();
+  const getUserInfo = getCurrentUser();
+  const userId = getUserInfo?.userId;
 
-  const userId = params.userId;
+  const router = useRouter();
+  const params = useParams<{ projectId: string }>();
+
+  // const userId = params.userId;
   const projectId = params.projectId;
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);

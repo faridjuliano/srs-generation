@@ -4,6 +4,9 @@ export interface SessionUser {
   email: string;
   fName: string;
   lName: string;
+  userId: string;
+  updatedAt: string;
+  token?: string; // Optional, may be included in some contexts
 }
 
 /**
