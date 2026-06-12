@@ -250,9 +250,7 @@ export default function NewNfNfrDetailedPage() {
       }
 
       router.push(
-        `/requirement-result/${encodeURIComponent(
-          nfNfrDetailedUserId.trim()
-        )}/${encodeURIComponent(data.projectId as string)}`
+        `/requirement-result/${encodeURIComponent(data.projectId as string)}`
       );
     } catch (err) {
       setNfNfrDetailedError(

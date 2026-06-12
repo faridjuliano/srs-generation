@@ -1,10 +1,12 @@
 "use client"
 import {useEffect, useState} from "react";
 import {useParams, useRouter} from "next/navigation";
+import {getCurrentUser} from "@/lib/auth";
 
 export default function RecentSrs() {
   const params = useParams<{ userId: string; projectId: string }>();
-  const userId = params.userId;
+  const getUserInfo = getCurrentUser();
+  const userId = getUserInfo?.userId;
   const router = useRouter();
   const projectIdParams = params.projectId;
 
@@ -42,24 +44,32 @@ export default function RecentSrs() {
     return <div>Loading...</div>;
   }
   return (
-    <div className="p-4">
-      <h4 className="font-semibold text-slate-900 dark:text-white">Recently Generated:</h4>
-      <div className="mt-2 flex flex-col gap-2 max-h-1/2 h-fit">
+    <div className="p-4 h-[100px] flex flex-col overflow-hidden">
+      <h4 className="font-semibold text-slate-900 dark:text-white">
+        Recently Generated:
+      </h4>
+
+      <div className="mt-2 flex-1 min-h-0 overflow-y-auto">
         {projectList?.length === 0 ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400">No recent SRS found.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            No recent SRS found.
+          </p>
         ) : (
           <div className="flex flex-col gap-2">
-          {
-            projectList.map((project: any) => (
-              <div onClick={() => onClickProject(project.projectId)} key={project.projectId} className=" ml-1 cursor-pointer rounded-lg bg-slate-200 ">
-                <h3 className="text-sm font-medium  px-1 py-2 text-slate-900 dark:text-white text-ellipsis text-center">
+            {projectList.map((project: any) => (
+              <div
+                onClick={() => onClickProject(project.projectId)}
+                key={project.projectId}
+                className="ml-1 cursor-pointer rounded-lg bg-slate-200"
+              >
+                <h3 className="text-sm font-medium p-2 text-slate-900 text-ellipsis text-center">
                   {project.projectName}
                 </h3>
               </div>
-            ))
-          }
+            ))}
+            
           </div>
-          )}
+        )}
       </div>
     </div>
   );
