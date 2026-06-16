@@ -29,6 +29,26 @@ const TOP_SECTION_ORDER = [
   'nonFunctionalRequirements'
 ] as const;
 
+const REQUIREMENT_KEY_ORDER = [
+  'id',
+  'title',
+  'statement',
+  'category',
+  'rationale',
+  'source',
+  'priority',
+  'fitCriterion',
+  'verificationMethod',
+  'preconditions',
+  'postconditions',
+  'dependsOn',
+  'conflictsWith',
+  'traceToFeatures',
+  'traceToConstraints',
+  'traceToAssumptions',
+  'notes',
+] as const;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
@@ -75,6 +95,56 @@ export default function FrNfrDetailedResultPage() {
 
   const projectName = getProjectNameFromContent(content);
 
+  function sortRequirementKeys<T extends Record<string, unknown>>(requirement: T): T {
+    const sorted: Record<string, unknown> = {};
+
+    for (const key of REQUIREMENT_KEY_ORDER) {
+      if (Object.prototype.hasOwnProperty.call(requirement, key)) {
+        sorted[key] = requirement[key];
+      }
+    }
+
+    for (const key of Object.keys(requirement)) {
+      if (!Object.prototype.hasOwnProperty.call(sorted, key)) {
+        sorted[key] = requirement[key];
+      }
+    }
+
+    return sorted as T;
+  }
+
+  function sortFrAndNfrValue(key: string, value: JsonValue): JsonValue {
+    if (key === 'functionalRequirements' && Array.isArray(value)) {
+      return value.map((item) => {
+        if (isRecord(item)) {
+          return sortRequirementKeys(item as Record<string, unknown>) as JsonValue;
+        }
+
+        return item;
+      }) as JsonValue;
+    }
+
+    if (key === 'nonFunctionalRequirements' && isRecord(value)) {
+      const sortedNfrGroups: Record<string, JsonValue> = {};
+
+      Object.entries(value as Record<string, JsonValue>).forEach(([groupKey, groupValue]) => {
+        sortedNfrGroups[groupKey] = Array.isArray(groupValue)
+          ? (groupValue.map((item) => {
+            if (isRecord(item)) {
+              return sortRequirementKeys(item as Record<string, unknown>) as JsonValue;
+            }
+
+            return item;
+          }) as JsonValue)
+          : groupValue;
+      });
+
+      return sortedNfrGroups as JsonValue;
+    }
+
+    return value;
+  }
+
   const orderedEntries = useMemo(() => {
     if (!isRecord(content)) return [] as DisplaySection[];
 
@@ -91,7 +161,7 @@ export default function FrNfrDetailedResultPage() {
           : key === 'nonFunctionalRequirements'
             ? 'Non-Functional Requirements'
             : toLabel(key),
-        value: contentRecord[key],
+        value: sortFrAndNfrValue(key, contentRecord[key]),
         kind: key === 'functionalRequirements' ? 'fr' : key === 'nonFunctionalRequirements' ? 'nfr' : 'default'
       });
     });

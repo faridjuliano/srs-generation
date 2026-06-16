@@ -42,6 +42,8 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                 <span className="text-sm font-bold">Generate Functional and Non-Functional Requirement</span>
               </Link>
             </div>
+          </div>
+          <div className="overflow-y-auto h-full">
             <RecentSrs/>
           </div>
           <LogoutBtn />
