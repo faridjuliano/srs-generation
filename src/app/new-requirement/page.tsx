@@ -313,8 +313,9 @@ export default function NewNfNfrDetailedPage() {
               </span>
             </Link>
           </div>
-
-          <RecentSrs />
+        </div>
+        <div className="overflow-y-auto h-full">
+          <RecentSrs/>
         </div>
 
         <LogoutBtn />
