@@ -76,7 +76,10 @@ export default function Home() {
 
           {/* Footer Text */}
           <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-            Login or create an account to start generating functional and non-functional requirements
+            {isToken ?
+              <span>You are logged in.</span>
+              : <span>Please login or create an account to start generating functional and non-functional requirements.</span>
+            }
           </p>
         </div>
       </div>
