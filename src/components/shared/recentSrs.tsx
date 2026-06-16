@@ -47,7 +47,7 @@ export default function RecentSrs() {
     return <div>Loading...</div>;
   }
   return (
-    <div className="flex h-[200px] min-h-0 flex-col p-4">
+    <div className="flex h-[300px] min-h-0 flex-col p-4">
       <h4 className="shrink-0 font-semibold text-slate-900 dark:text-white">
         Recently Generated:
       </h4>
