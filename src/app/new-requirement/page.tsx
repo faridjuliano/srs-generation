@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
@@ -24,9 +24,10 @@ function hasWhitespace(value: string): boolean {
 
 export default function NewNfNfrDetailedPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [nfNfrDetailedUserId, setNfNfrDetailedUserId] = useState("");
-  const [nfNfrDetailedProjectId, setNfNfrDetailedProjectId] = useState("");
+  const [nfNfrDetailedProjectId] = useState("");
 
   const [nfNfrDetailedProjectName, setNfNfrDetailedProjectName] = useState(
     ""
@@ -43,21 +44,7 @@ export default function NewNfNfrDetailedPage() {
 
   const [nfNfrDetailedFeatures, setNfNfrDetailedFeatures] = useState<
     NfNfrDetailedFeature[]
-  >([
-    createEmptyNfNfrDetailedFeature(),
-    // {
-    //   name: 'Appointment Booking',
-    //   description: 'Patients can book appointments with available doctors.'
-    // },
-    // {
-    //   name: 'Appointment Management',
-    //   description: 'Patients can reschedule or cancel appointments.'
-    // },
-    // {
-    //   name: 'Doctor Schedule View',
-    //   description: 'Doctors can view their daily appointment schedule.'
-    // }
-  ]);
+  >([]);
 
   const [nfNfrDetailedConstraints, setNfNfrDetailedConstraints] = useState<
     string[]
@@ -110,6 +97,36 @@ export default function NewNfNfrDetailedPage() {
         setNfNfrDetailedUserId(authorName);
       }
     }
+
+    if (searchParams.has("hasvalue")) {
+      //setter default
+      setNfNfrDetailedProjectName(() => "Appointment Booking System");
+      setNfNfrDetailedProjectDescription(
+        () =>
+          "A web-based system for booking, rescheduling, and cancelling doctor appointments."
+      );
+
+      setNfNfrDetailedFeatures(() => [
+        {
+          name: "Appointment Booking",
+          description: "Patients can book appointments with available doctors.",
+        },
+        {
+          name: "Appointment Management",
+          description: "Patients can reschedule or cancel appointments.",
+        },
+        {
+          name: "Doctor Schedule View",
+          description: "Doctors can view their daily appointment schedule.",
+        },
+      ]);
+
+      setNfNfrDetailedConstraints(() => ["Must support 500 concurrent users"]);
+
+      setNfNfrDetailedAssumptions(() => ["Users have stable internet connection"]);
+    }
+
+
   }, []);
 
   useEffect(() => {
