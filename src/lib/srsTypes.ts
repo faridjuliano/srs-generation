@@ -1,3 +1,5 @@
+import type { QualityGrade } from '@/lib/qualityScore';
+
 /**
  * Centralized types for SRS results and editing
  */
@@ -17,6 +19,7 @@ export type BackendValidation = {
     suggestion?: string;
   }>;
   qualityScore: number;
+  qualityGrade?: QualityGrade;
 };
 
 export type ApiSrsPayload = {

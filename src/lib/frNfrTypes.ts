@@ -1,3 +1,5 @@
+import type { QualityGrade } from '@/lib/qualityScore';
+
 export type FrNfrValidationIssue = {
   severity: 'error' | 'warning' | 'info';
   code?: string;
@@ -20,6 +22,7 @@ export type FrNfrValidationGroup = {
     warnings?: number;
   };
   qualityScore?: number;
+  qualityGrade?: QualityGrade | null;
   issues: FrNfrValidationIssue[];
 };
 
@@ -32,6 +35,7 @@ export type FrNfrValidation = {
   };
   isValid: boolean;
   qualityScore: number | null;
+  qualityGrade?: QualityGrade | null;
   totalRequirements: number | null;
   totalIssues: number;
   errors: number;

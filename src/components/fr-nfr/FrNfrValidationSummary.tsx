@@ -2,6 +2,7 @@
 
 import Tooltip from '@/components/shared/Tooltip';
 import type { FrNfrValidation, FrNfrValidationGroup, FrNfrValidationIssue } from '@/lib/frNfrTypes';
+import { QUALITY_GRADE_TABLE, getQualityGrade, type QualityGrade } from '@/lib/qualityScore';
 import { useState } from 'react';
 
 type FrNfrValidationIssueDisplay = {
@@ -36,8 +37,36 @@ function formatScalar(value: unknown): string {
   return '—';
 }
 
-function getScoreTone(score: number | null) {
-  if (score === null) {
+const QUALITY_TONE_MAP: Record<QualityGrade, { card: string; label: string; value: string }> = {
+  A: {
+    card: 'border-blue-200 dark:border-blue-800/70 bg-blue-50 dark:bg-blue-900/20',
+    label: 'text-blue-600 dark:text-blue-300',
+    value: 'text-blue-700 dark:text-blue-300'
+  },
+  B: {
+    card: 'border-emerald-200 dark:border-emerald-800/70 bg-emerald-50 dark:bg-emerald-900/20',
+    label: 'text-emerald-600 dark:text-emerald-300',
+    value: 'text-emerald-700 dark:text-emerald-300'
+  },
+  C: {
+    card: 'border-amber-200 dark:border-amber-800/70 bg-amber-50 dark:bg-amber-900/20',
+    label: 'text-amber-600 dark:text-amber-300',
+    value: 'text-amber-700 dark:text-amber-300'
+  },
+  D: {
+    card: 'border-orange-200 dark:border-orange-800/70 bg-orange-50 dark:bg-orange-900/20',
+    label: 'text-orange-600 dark:text-orange-300',
+    value: 'text-orange-700 dark:text-orange-300'
+  },
+  F: {
+    card: 'border-rose-200 dark:border-rose-800/70 bg-rose-50 dark:bg-rose-900/20',
+    label: 'text-rose-600 dark:text-rose-300',
+    value: 'text-rose-700 dark:text-rose-300'
+  }
+};
+
+function getScoreTone(score: number | null, grade: QualityGrade | null) {
+  if (score === null && !grade) {
     return {
       card: 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/20',
       label: 'text-slate-500 dark:text-slate-400',
@@ -45,35 +74,8 @@ function getScoreTone(score: number | null) {
     };
   }
 
-  if (score < 40) {
-    return {
-      card: 'border-rose-200 dark:border-rose-800/70 bg-rose-50 dark:bg-rose-900/20',
-      label: 'text-rose-600 dark:text-rose-300',
-      value: 'text-rose-700 dark:text-rose-300'
-    };
-  }
-
-  if (score < 70) {
-    return {
-      card: 'border-amber-200 dark:border-amber-800/70 bg-amber-50 dark:bg-amber-900/20',
-      label: 'text-amber-600 dark:text-amber-300',
-      value: 'text-amber-700 dark:text-amber-300'
-    };
-  }
-
-  if (score < 90) {
-    return {
-      card: 'border-emerald-200 dark:border-emerald-800/70 bg-emerald-50 dark:bg-emerald-900/20',
-      label: 'text-emerald-600 dark:text-emerald-300',
-      value: 'text-emerald-700 dark:text-emerald-300'
-    };
-  }
-
-  return {
-    card: 'border-blue-200 dark:border-blue-800/70 bg-blue-50 dark:bg-blue-900/20',
-    label: 'text-blue-600 dark:text-blue-300',
-    value: 'text-blue-700 dark:text-blue-300'
-  };
+  const resolvedGrade = grade ?? getQualityGrade(score);
+  return resolvedGrade ? QUALITY_TONE_MAP[resolvedGrade] : QUALITY_TONE_MAP.F;
 }
 
 type FrNfrValidationSummaryProps = {
@@ -84,8 +86,8 @@ function normalizeGroupIssues(issues: FrNfrValidationIssue[] | undefined): FrNfr
   return (issues ?? []).map(issue => issue as FrNfrValidationIssueDisplay);
 }
 
-function getGroupTone(score: number | null) {
-  return getScoreTone(score);
+function getGroupTone(score: number | null, grade: QualityGrade | null) {
+  return getScoreTone(score, grade);
 }
 
 export default function FrNfrValidationSummary({ validation }: FrNfrValidationSummaryProps) {
@@ -102,13 +104,15 @@ export default function FrNfrValidationSummary({ validation }: FrNfrValidationSu
       },
       isValid: false,
       qualityScore: null,
+      qualityGrade: null,
       totalRequirements: null,
       totalIssues: 0,
       errors: 0,
       warnings: 0,
       issues: []
     };
-  const scoreTone = getScoreTone(displayValidation.qualityScore);
+  const displayQualityGrade = displayValidation.qualityGrade ?? getQualityGrade(displayValidation.qualityScore);
+  const scoreTone = getScoreTone(displayValidation.qualityScore, displayQualityGrade);
   const validationGroups: ValidationGroupDisplay[] = displayValidation.byType
     ? [
         ...(displayValidation.byType.FR
@@ -153,15 +157,16 @@ export default function FrNfrValidationSummary({ validation }: FrNfrValidationSu
         <>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <div className={`rounded-lg border p-3 ${scoreTone.card}`}>
-              <div className={`flex items-center gap-1 text-xs ${scoreTone.label}`}>
+              <div className={`flex items-center justify-between gap-2 text-xs ${scoreTone.label}`}>
                 <span>Overall Quality Score</span>
                 <Tooltip
                   content={
                     <div className="space-y-1">
-                      <p><strong>90–100</strong> → strong quality</p>
-                      <p><strong>70–89</strong> → mostly good, some warnings</p>
-                      <p><strong>40–69</strong> → needs attention</p>
-                      <p><strong>0–39</strong> → poor quality / many issues</p>
+                      {QUALITY_GRADE_TABLE.map((band) => (
+                        <p key={band.grade}>
+                          <strong>{band.min}–{band.max}</strong> → {band.grade} — {band.interpretation}
+                        </p>
+                      ))}
                     </div>
                   }
                 >
@@ -174,7 +179,12 @@ export default function FrNfrValidationSummary({ validation }: FrNfrValidationSu
                   </button>
                 </Tooltip>
               </div>
-              <p className={`text-lg font-bold ${scoreTone.value}`}>{displayValidation.qualityScore ?? '-'}</p>
+              <div className="mt-2 flex items-end justify-between gap-3">
+                <p className={`text-md font-bold ${scoreTone.value}`}>{displayValidation.qualityScore ?? '-'}</p>
+                <span className={`inline-flex items-center rounded-full border border-current px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${scoreTone.label}`}>
+                  Grade {displayQualityGrade ?? '-'}
+                </span>
+              </div>
             </div>
             <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3">
               <p className="text-xs text-slate-500 dark:text-slate-400">Total Requirements</p>
@@ -214,7 +224,8 @@ export default function FrNfrValidationSummary({ validation }: FrNfrValidationSu
                 <div className="grid gap-3">
                   {validationGroups.map(group => {
                     const groupScore = group.data.qualityScore ?? null;
-                    const groupTone = getGroupTone(groupScore);
+                    const groupGrade = group.data.qualityGrade ?? getQualityGrade(groupScore);
+                    const groupTone = getGroupTone(groupScore, groupGrade);
                     const groupIssues = normalizeGroupIssues(group.data.issues);
                     const groupSummary = group.data.summary;
 
@@ -230,6 +241,9 @@ export default function FrNfrValidationSummary({ validation }: FrNfrValidationSu
                           <div className={`rounded-lg border px-3 py-2 ${groupTone.card}`}>
                             <p className={`text-[11px] font-semibold uppercase tracking-wide ${groupTone.label}`}>Quality</p>
                             <p className={`text-sm font-bold ${groupTone.value}`}>{groupScore ?? '-'}</p>
+                            <p className={`text-[11px] font-semibold uppercase tracking-wide ${groupTone.label}`}>
+                              Grade {groupGrade ?? '-'}
+                            </p>
                           </div>
                         </div>
 

@@ -1,3 +1,5 @@
+import { getQualityGrade, type QualityGrade } from '@/lib/qualityScore';
+
 export type Severity = 'error' | 'warning';
 
 export interface Stakeholder {
@@ -81,6 +83,7 @@ export interface ValidationResult {
   warningCount: number;
   issues: ValidationIssue[];
   qualityScore: number;
+  qualityGrade: QualityGrade;
 }
 
 const VAGUE_TERMS = [
@@ -134,13 +137,15 @@ export function validateSRS(document: SRSDocument): ValidationResult {
 
   const errorCount = issues.filter(i => i.severity === 'error').length;
   const warningCount = issues.filter(i => i.severity === 'warning').length;
+  const qualityScore = calculateQualityScore(issues);
 
   return {
     passed: errorCount === 0,
     errorCount,
     warningCount,
     issues,
-    qualityScore: calculateQualityScore(issues)
+    qualityScore,
+    qualityGrade: getQualityGrade(qualityScore) ?? 'F'
   };
 }
 
